@@ -1,0 +1,85 @@
+body {
+  margin: 0;
+  font-family: "Poppins", sans-serif;
+  display: flex;
+  background-color: #fff8e1;
+  overflow-x: hidden;
+}
+
+/* SIDEBAR */
+.sidebar {
+  width: 250px;
+  height: 100vh;
+  background: linear-gradient(180deg, #f6c945, #d1a01c);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: fixed;
+  top: 0;
+  left: 0;
+  padding: 20px 10px;
+  transition: all 0.3s ease;
+  z-index: 100;
+}
+
+.sidebar-header {
+  text-align: center;
+  width: 100%;
+  position: relative;
+}
+
+.sidebar .logo {
+  font-weight: 700;
+  font-size: 1.6rem;
+  color: white;
+}
+
+.nav-link {
+  color: white;
+  display: flex;
+  align-items: center;
+  padding: 10px 20px;
+  text-decoration: none;
+  transition: 0.3s;
+}
+
+.nav-link:hover,
+.nav-link.active {
+  background-color: rgba(255, 255, 255, 0.25);
+  border-radius: 8px;
+}
+
+.btn-dark {
+  background-color: #222;
+}
+
+/* MAIN */
+.main-content {
+  margin-left: 250px;
+  padding: 30px;
+  width: 100%;
+  min-height: 100vh;
+  background: url("../img/bg-pattern.png") repeat center;
+  background-size: contain;
+  transition: margin-left 0.3s ease;
+}
+
+.table {
+  background-color: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+}
+
+@media (max-width: 992px) {
+  .sidebar {
+    left: -250px;
+  }
+  .sidebar.active {
+    left: 0;
+  }
+  .main-content {
+    margin-left: 0;
+  }
+}

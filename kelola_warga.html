@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kelola Data Warga</title>
+
+  <link href="./assets/bootstrap-5.3.8-dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(rgba(255, 255, 255, 0.85), rgba(253, 226, 119, 0.55)),
+                  url(./assets/img/batik\ awan\ kuning\ bg.jpg);
+      background-size: cover;
+      background-position: center;
+      min-height: 100vh;
+      margin: 0;
+      overflow-x: hidden;
+    }
+
+    /* ===== SIDEBAR ===== */
+    .sidebar {
+      width: 240px;
+      height: 100vh;
+      background: linear-gradient(180deg, #f5c83b, #caa43b);
+      color: #fff;
+      position: fixed;
+      top: 0;
+      left: 0;
+      box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+      z-index: 1000;
+      padding: 20px 0;
+      display: flex;
+      flex-direction: column;
+      transition: left 0.3s ease;
+    }
+
+    .sidebar.hidden {
+      left: -240px;
+    }
+
+    .sidebar .logo {
+      font-weight: 700;
+      font-size: 1.8rem;
+      color: #fff;
+    }
+
+    .sidebar .nav-link {
+      color: #fff !important;
+      font-weight: 500;
+      margin: 8px 20px;
+      border-radius: 8px;
+      transition: 0.3s;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .sidebar .nav-link.active,
+    .sidebar .nav-link:hover {
+      background-color: rgba(255, 255, 255, 0.25);
+    }
+     .logout-btn {
+      background-color: #333;
+      color: #fff;
+      font-weight: 500;
+      border: none;
+      width: 80%;
+      margin: auto auto 20px auto;
+      border-radius: 10px;
+      padding: 10px 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: 0.2s;
+    }
+
+    .logout-btn:hover { background-color: #222; }
+
+    /* ===== MAIN CONTENT ===== */
+    .main-content {
+       margin-left: 240px;
+      padding: 90px 30px 30px;
+      min-height: 100vh;
+      transition: margin-left 0.3s ease;
+    }
+
+    /* ===== TABLE ===== */
+    .table {
+      min-width: 720px;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .table th {
+      background-color: #f4c430 !important;
+      color: #000;
+      font-weight: 600;
+      text-align: center;
+    }
+
+    /* ===== TOGGLE BUTTON ===== */
+    #toggleSidebar {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      color: #333;
+      cursor: pointer;
+      display: none;
+    }
+
+    /* ===== FILTER BAR ===== */
+    .filter-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .filter-bar .search-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .filter-bar input {
+      max-width: 220px;
+    }
+
+    .btn-tambah {
+      background-color: #ffc107;
+      color: #000;
+      font-weight: 600;
+    }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 992px) {
+      #toggleSidebar {
+        display: inline-block;
+      }
+
+      .sidebar {
+        left: -240px;
+      }
+
+      .sidebar.active {
+        left: 0;
+      }
+
+      .main-content {
+        margin-left: 0;
+      }
+
+      .header-top {
+        flex-direction: row;
+        justify-content: flex-start;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .filter-bar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .filter-bar .search-group {
+        width: 100%;
+        justify-content: space-between;
+      }
+
+      .filter-bar .btn-tambah {
+        width: 100%;
+      }
+    }
+
+    @media (max-width: 576px) {
+      h4 {
+        font-size: 1.2rem;
+      }
+
+      button.btn {
+        font-size: 0.85rem;
+      }
+
+      .modal-dialog {
+        max-width: 95%;
+        margin: auto;
+      }
+
+    .header-top {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .header-top h4 {
+      font-weight: 700;
+      color: #000;
+    }
+    }
+      .mobile-header {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%;
+      background: #f5c83b;
+      color: #000;
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      z-index: 998;
+     }
+
+     @media (max-width: 992px) {
+      .sidebar {
+        left: -240px;
+      }
+
+      .main-content {
+        margin-left: 0;
+        padding-top: 100px;
+      }
+    }
+
+    .sidebar img {
+  width: 110px;         
+  display: block;
+  margin: 20px auto 50px auto;  
+}
+
+.sidebar .nav {
+  margin-top: 0;        
+  padding-top: 0;
+}
+.sidebar hr {
+  border: 1px solid #000 ;  
+  width: 80%;             
+  margin: -40px auto 20px auto;
+        
+}
+
+.logoMobile {
+  width: 80px;         
+  display: block;
+}
+
+  
+     
+  
+
+  </style>
+</head>
+
+<body>
+<!-- HEADER MOBILE -->
+  <header class="mobile-header d-lg-none">
+    <button id="menuToggle" class="btn btn-warning me-2"><i class="fa-solid fa-bars"></i></button>
+    <img src="assets/img/logo final.png" class="logoMobile"  alt="logo">
+  </header>
+
+
+   <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+     <img src="./assets/img/logo final.png" alt="logo" >
+    <hr>
+    <ul class="nav flex-column mt-4">
+      <li><a href="dashboardBendahara.html" class="nav-link"><i class="fa-solid fa-house me-2"></i>Dashboard</a></li>
+      <li><a href="iuran.html" class="nav-link"><i class="fa-solid fa-wallet me-2"></i>Iuran</a></li>
+      <li><a href="kelola_warga.html" class="nav-link active"><i class="fa-solid fa-users me-2"></i>Kelola Warga</a></li>
+      <li><a href="Pengajuan.html" class="nav-link"><i class="fa-solid fa-file-import me-2"></i>Pengajuan</a></li>
+      <li><a href="laporanBendahara.html" class="nav-link"><i class="fa-solid fa-file-lines me-2"></i>Laporan</a></li>
+    </ul>
+    <button class="logout-btn" onclick="logout()">
+      <i class="fa-solid fa-right-from-bracket me-2"></i>Sign Out
+    </button>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main-content">
+    <div class="container py-4">
+      <!-- HEADER -->
+      <div class="header-top">
+        <h4 class="fw-bold text-dark m-0"><i class="fa-solid fa-users me-2"></i>Kelola Data Warga</h4>
+      </div>
+
+      <!-- FILTER BAR -->
+      <div class="filter-bar">
+        <div class="search-group">
+          <input type="text" id="searchNama" class="form-control" placeholder="🔍 Cari nama warga..." />
+          <input type="text" id="searchNIK" class="form-control" placeholder="🔍 Cari NIK..." />
+        </div>
+        <button class="btn btn-tambah" data-bs-toggle="modal" data-bs-target="#modalWarga">
+          <i class="fa-solid fa-plus me-1"></i> Tambah Warga
+        </button>
+      </div>
+
+      <!-- TABLE -->
+      <div class="table-responsive">
+        <table class="table table-bordered align-middle text-center shadow-sm rounded">
+          <thead>
+            <tr>
+              <th>Nama</th>
+              <th>NIK</th>
+              <th>Alamat</th>
+              <th>No Telepon</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="wargaList"></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- MODAL -->
+  <div class="modal fade" id="modalWarga" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content rounded-4 shadow-lg">
+        <div class="modal-header bg-warning border-0">
+          <h5 class="modal-title fw-bold" id="modalTitle">Tambah Warga</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="wargaForm">
+            <input type="hidden" id="wargaIndex" />
+
+            <label for="nama" class="form-label">Nama</label>
+            <input type="text" id="nama" class="form-control mb-2" required />
+
+            <label for="nik" class="form-label">NIK</label>
+            <input type="text" id="nik" class="form-control mb-2" required />
+
+            <label for="alamat" class="form-label">Alamat</label>
+            <input type="text" id="alamat" class="form-control mb-2" required />
+
+            <label for="telp" class="form-label">No Telepon</label>
+            <input type="text" id="telp" class="form-control mb-3" required />
+
+            <button type="submit" class="btn btn-success w-100 fw-semibold">Simpan</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="./assets/bootstrap-5.3.8-dist/js/bootstrap.bundle.min.js"></script>
+   <script>
+    const sidebar = document.getElementById("sidebar");
+    const menuToggle = document.getElementById("menuToggle");
+
+    // Toggle sidebar (mobile)
+    menuToggle.addEventListener("click", (e) => {
+      e.stopPropagation();
+      sidebar.classList.toggle("active");
+    });
+
+    // Tutup sidebar kalau klik di luar
+    document.addEventListener("click", (e) => {
+      const isMobile = window.innerWidth <= 992;
+      const clickedInsideSidebar = sidebar.contains(e.target);
+      const clickedToggle = menuToggle.contains(e.target);
+      if (isMobile && sidebar.classList.contains("active") && !clickedInsideSidebar && !clickedToggle) {
+        sidebar.classList.remove("active");
+      }
+    });
+    // Dummy data
+    let warga = [
+      { nama: "Sri Rahayu", nik: "3210123456789012", alamat: "Jl. Mawar No. 12", telp: "08123456700" },
+      { nama: "Budi Surecep", nik: "3210123456789013", alamat: "Jl. Kenanga No. 7", telp: "081234567891" },
+      { nama: "Ayu Lestari", nik: "3210123456789014", alamat: "Jl. Melati No. 3", telp: "081234567892" },
+      { nama: "Joko Hartono", nik: "3210123456789015", alamat: "Jl. Anggrek No. 8", telp: "081234567893" },
+      { nama: "Fitri Handayani", nik: "3210123456789016", alamat: "Jl. Dahlia No. 5", telp: "081234567894" },
+      { nama: "Rahmat Hidayat", nik: "3210123456789017", alamat: "Jl. Cempaka No. 9", telp: "081234567895" },
+      { nama: "Dewi Sartika", nik: "3210123456789018", alamat: "Jl. Nusa Indah No. 4", telp: "081234567896" },
+      { nama: "Ahmad Fauzi", nik: "3210123456789019", alamat: "Jl. Teratai No. 10", telp: "081234567897" },
+      { nama: "Siti Aminah", nik: "3210123456789020", alamat: "Jl. Flamboyan No. 2", telp: "081234567898" },
+      { nama: "Yanto Prabowo", nik: "3210123456789021", alamat: "Jl. Merpati No. 11", telp: "081234567899" }
+    ];
+
+    const wargaList = document.getElementById("wargaList");
+    const form = document.getElementById("wargaForm");
+    const modal = new bootstrap.Modal(document.getElementById("modalWarga"));
+    const searchNama = document.getElementById("searchNama");
+    const searchNIK = document.getElementById("searchNIK");
+
+    function renderTable(data) {
+      wargaList.innerHTML = data.map((w, i) => `
+        <tr>
+          <td>${w.nama}</td>
+          <td>${w.nik}</td>
+          <td>${w.alamat}</td>
+          <td>${w.telp}</td>
+          <td>
+            <button class="btn btn-primary btn-sm" onclick="editWarga(${i})"><i class="fa-solid fa-pen"></i></button>
+            <button class="btn btn-danger btn-sm" onclick="hapusWarga(${i})"><i class="fa-solid fa-trash"></i></button>
+          </td>
+        </tr>
+      `).join("");
+    }
+
+    renderTable(warga);
+
+    searchNama.addEventListener("input", filterData);
+    searchNIK.addEventListener("input", filterData);
+
+    function filterData() {
+      const namaKey = searchNama.value.toLowerCase();
+      const nikKey = searchNIK.value.toLowerCase();
+      const filtered = warga.filter(
+        (w) => w.nama.toLowerCase().includes(namaKey) && w.nik.includes(nikKey)
+      );
+
+      
+      renderTable(filtered);
+    }
+  </script>
+
+  <script>
+  
+
+  // Fungsi untuk edit warga
+  function editWarga(index) {
+    const w = warga[index];
+    document.getElementById("modalTitle").innerText = "Edit Warga";
+    document.getElementById("wargaIndex").value = index;
+    document.getElementById("nama").value = w.nama;
+    document.getElementById("nik").value = w.nik;
+    document.getElementById("alamat").value = w.alamat;
+    document.getElementById("telp").value = w.telp;
+    modal.show();
+  }
+
+  // Fungsi untuk hapus warga
+  function hapusWarga(index) {
+    if (confirm(`Apakah kamu yakin ingin menghapus data ${warga[index].nama}?`)) {
+      warga.splice(index, 1);
+      renderTable(warga);
+    }
+  }
+
+  // Fungsi simpan (untuk tambah / edit)
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const index = document.getElementById("wargaIndex").value;
+    const newData = {
+      nama: document.getElementById("nama").value,
+      nik: document.getElementById("nik").value,
+      alamat: document.getElementById("alamat").value,
+      telp: document.getElementById("telp").value,
+    };
+
+    if (index === "") {
+      warga.push(newData);
+    } else {
+      warga[index] = newData;
+    }
+
+    modal.hide();
+    renderTable(warga);
+    form.reset();
+    document.getElementById("modalTitle").innerText = "Tambah Warga";
+  });
+</script>
+
+</body>
+</html>
