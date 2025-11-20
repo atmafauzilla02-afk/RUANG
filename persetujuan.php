@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Persetujuan | Ruang</title>
+  <link href="./assets/bootstrap-5.3.8-dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(rgba(255, 255, 255, 0.85), rgba(253, 226, 119, 0.6)),
+                  url(./assets/img/batik\ awan\ kuning\ bg.jpg);
+      background-size: cover;
+      background-position: center;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* === SIDEBAR === */
+    .sidebar {
+      width: 240px;
+      height: 100vh;
+      background: linear-gradient(180deg, #f5c83b, #caa43b);
+      color: #fff;
+      position: fixed;
+      top: 0;
+      left: 0;
+      box-shadow: 2px 0 10px rgba(0,0,0,0.08);
+      z-index: 1000;
+      padding: 20px 0;
+      display: flex;
+      flex-direction: column;
+      transition: all 0.3s ease;
+    }
+
+    .sidebar .logo {
+      font-weight: 700;
+      color: #fff;
+      font-size: 1.8rem;
+    }
+
+    .sidebar .subtitle {
+      font-size: 0.9rem;
+      color: rgba(255, 255, 255, 0.85);
+      margin-top: -6px;
+    }
+
+    .sidebar .nav-link {
+      color: #fff !important;
+      font-weight: 500;
+      margin: 8px 20px;
+      border-radius: 8px;
+      transition: 0.3s;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .sidebar .nav-link.active,
+    .sidebar .nav-link:hover {
+      background-color: rgba(255, 255, 255, 0.25);
+    }
+
+    @media (max-width: 992px) {
+      .sidebar { left: -240px; }
+      .sidebar.show { left: 0; }
+    }
+
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      display: none;
+      z-index: 9;
+    }
+    .overlay.active { display: block; }
+
+    .mobile-header {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%;
+      background: #f5c83b;
+      color: #000;
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      z-index: 998;
+    }
+   
+
+    .main-content {
+      margin-left: 250px;
+      padding: 2rem;
+      transition: 0.3s;
+    }
+
+    @media (max-width: 992px) {
+      .main-content { margin-left: 0; padding-top: 70px; }
+    }
+
+    /* === CARD STYLING === */
+    .card-persetujuan {
+      background: #fff;
+      border-radius: 14px;
+      padding: 16px 20px;
+      box-shadow: 0 3px 15px rgba(0,0,0,0.06);
+      margin: 0 auto 18px auto;
+      transition: 0.25s;
+      width: 100%;
+      max-width: 1100px;
+    }
+
+    .card-persetujuan:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .card-body p {
+      margin-bottom: 0;
+      font-size: 0.9rem;
+      color: #555;
+    }
+
+    .status-badge {
+      font-size: 0.8rem;
+      border-radius: 10px;
+      padding: 5px 10px;
+      font-weight: 500;
+    }
+
+    .status-menunggu { background: #fff3cd; color: #856404; }
+    .status-disetujui { background: #d4edda; color: #155724; }
+    .status-ditolak { background: #f8d7da; color: #721c24; }
+
+    @media (max-width: 768px) {
+      .card-persetujuan {
+        padding: 14px;
+        max-width: 100%;
+      }
+      .card-header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .status-badge {
+        margin-top: 6px;
+      }
+    }
+
+    /* Smooth fade animation */
+    .fade-in {
+      opacity: 0;
+      transform: translateY(10px);
+      animation: fadeIn 0.5s forwards;
+    }
+    @keyframes fadeIn {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+.sidebar img {
+  width: 110px;         
+  display: block;
+  margin: 20px auto 50px auto;  
+}
+
+.sidebar .nav {
+  margin-top: 0;        
+  padding-top: 0;
+}
+.sidebar hr {
+  border: 1px solid #000 ;  
+  width: 80%;             
+  margin: -40px auto 20px auto;
+        
+}
+
+.logoMobile {
+  width: 80px;         
+  display: block;
+}
+
+
+
+
+  </style>
+</head>
+<body>
+
+    <header class="mobile-header d-lg-none">
+    <button id="menuToggle" class="btn btn-warning me-2"><i class="fa-solid fa-bars"></i></button>
+    <img src="assets/img/logo final.png" class="logoMobile"  alt="logo">
+  </header>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+   <img src="assets/img/logo final.png"  alt="logo">
+   <hr>
+    <ul class="nav flex-column mt-4">
+      <li><a href="dashboardRT.php" class="nav-link"><i class="fa-solid fa-house"></i>Dashboard</a></li>
+      <li><a href="persetujuan.php" class="nav-link active"><i class="fa-solid fa-file-signature"></i>Persetujuan</a></li>
+      <li><a href="pengeluaranRT.php" class="nav-link"><i class="fa-solid fa-coins"></i>Pengeluaran</a></li>
+      <li><a href="laporanRT.php" class="nav-link"><i class="fa-solid fa-file-lines"></i>Laporan</a></li>
+    </ul>
+    <a href="logout.php" class="btn btn-dark w-75 mx-auto mt-auto mb-4">
+      <i class="fa-solid fa-right-from-bracket me-2"></i>Sign Out
+    </a>
+  </aside>
+
+  <div id="overlay" class="overlay"></div>
+
+
+
+  <main class="main-content container">
+    <h3 class="fw-bold mb-4 text-center">Daftar Persetujuan Dana</h3>
+    <div id="persetujuanList" class="col-12"></div>
+  </main>
+
+  <!-- MODAL KONFIRMASI -->
+  <div class="modal fade" id="confirmModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content text-center p-4">
+        <h5 id="modalTitle" class="fw-bold mb-3"></h5>
+        <p id="modalMessage"></p>
+        <div class="d-flex justify-content-center gap-3 mt-3">
+          <button id="confirmYes" class="btn btn-success">Ya</button>
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="./assets/bootstrap-5.3.8-dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    const dataPersetujuan = [
+      {judul: "Pembuatan Saluran Air", pengaju: "Pak Joko", deskripsi: "Perbaikan saluran air di Blok A agar tidak tergenang saat hujan.", tanggal: "12 Mei 2025", status: "Menunggu Persetujuan"},
+      {judul: "Pembelian Kursi Pos Ronda", pengaju: "Bu Nani", deskripsi: "Pengadaan kursi baru untuk pos ronda RT 03.", tanggal: "22 Juni 2025", status: "Disetujui"},
+      {judul: "Pengecatan Gapura", pengaju: "Pak Rudi", deskripsi: "Mengecat ulang gapura depan perumahan yang sudah pudar.", tanggal: "2 Juli 2025", status: "Menunggu Persetujuan"},
+      {judul: "Pemasangan CCTV", pengaju: "Bu Tini", deskripsi: "Pemasangan CCTV di area parkir umum untuk keamanan lingkungan.", tanggal: "8 Agustus 2025", status: "Ditolak"},
+      {judul: "Perbaikan Jalan Gang", pengaju: "Pak Bambang", deskripsi: "Menambal jalan gang utama yang rusak akibat hujan deras.", tanggal: "5 September 2025", status: "Menunggu Persetujuan"},
+    ];
+
+    const listContainer = document.getElementById("persetujuanList");
+    const modal = new bootstrap.Modal(document.getElementById("confirmModal"));
+    const modalTitle = document.getElementById("modalTitle");
+    const modalMessage = document.getElementById("modalMessage");
+    const confirmYes = document.getElementById("confirmYes");
+
+    function renderList() {
+      listContainer.innerHTML = "";
+      dataPersetujuan.forEach((item, index) => {
+        let badgeClass =
+          item.status === "Disetujui" ? "status-disetujui" :
+          item.status === "Ditolak" ? "status-ditolak" :
+          "status-menunggu";
+
+        const card = `
+          <div class="card-persetujuan fade-in" id="card-${index}">
+            <div class="card-header">
+              <div>
+                <h6 class="fw-bold mb-1">${item.judul}</h6>
+                <p class="text-muted small mb-1">Diajukan oleh: ${item.pengaju}</p>
+                <small class="text-secondary"><i class="fa-regular fa-calendar me-1"></i>${item.tanggal}</small>
+              </div>
+              <span class="status-badge ${badgeClass}">${item.status}</span>
+            </div>
+            <div class="card-body mt-2">
+              <p>${item.deskripsi}</p>
+              ${item.status === "Menunggu Persetujuan" ? `
+              <div class="text-end mt-3">
+                <button class="btn btn-success btn-sm me-2" onclick="showModal(${index}, true)">Setujui</button>
+                <button class="btn btn-danger btn-sm" onclick="showModal(${index}, false)">Tolak</button>
+              </div>` : ""}
+            </div>
+          </div>
+        `;
+        listContainer.innerHTML += card;
+      });
+    }
+
+    function showModal(index, approve) {
+      modalTitle.textContent = approve ? "Konfirmasi Persetujuan" : "Konfirmasi Penolakan";
+      modalMessage.textContent = approve
+        ? `Apakah Anda yakin ingin menyetujui pengajuan "${dataPersetujuan[index].judul}"?`
+        : `Apakah Anda yakin ingin menolak pengajuan "${dataPersetujuan[index].judul}"?`;
+
+      confirmYes.onclick = () => {
+        dataPersetujuan[index].status = approve ? "Disetujui" : "Ditolak";
+        renderList();
+        modal.hide();
+      };
+      modal.show();
+    }
+
+    renderList();
+
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('overlay');
+    const menuToggle = document.getElementById('menuToggle');
+
+    menuToggle.addEventListener('click', () => {
+      sidebar.classList.toggle('show');
+      overlay.classList.toggle('active');
+    });
+    overlay.addEventListener('click', () => {
+      sidebar.classList.remove('show');
+      overlay.classList.remove('active');
+    });
+
+    function logout() {
+      alert("Logout berhasil!");
+      location.href = "index.html";
+    }
+  </script>
+</body>
+</html>
