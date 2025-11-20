@@ -1,5 +1,5 @@
 <?php
 
-$koneksi = mysqli_connect("localhost", "root", "", "ruang");
+$koneksi = mysqli_connect("localhost", "root", "", "ruang1");
 
 ?>
