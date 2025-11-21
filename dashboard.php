@@ -61,14 +61,14 @@
     <img src="./assets/img/logo final.png" alt="logo" >
     <hr>
     <ul class="nav flex-column mt">
-      <li><a href="dashboard.html" class="nav-link active"><i class="fa-solid fa-house me-2"></i> Dashboard</a></li>
-      <li><a href="status.html" class="nav-link"><i class="fa-solid fa-wallet me-2"></i> Status</a></li>
-      <li><a href="pengeluaran.html" class="nav-link"><i class="fa-solid fa-coins me-2"></i> Pengeluaran</a></li>
-      <li><a href="laporan.html" class="nav-link"><i class="fa-solid fa-file-lines me-2"></i> Laporan</a></li>
+      <li><a href="dashboard.php" class="nav-link active"><i class="fa-solid fa-house me-2"></i> Dashboard</a></li>
+      <li><a href="status.php" class="nav-link"><i class="fa-solid fa-wallet me-2"></i> Status</a></li>
+      <li><a href="pengeluaran.php" class="nav-link"><i class="fa-solid fa-coins me-2"></i> Pengeluaran</a></li>
+      <li><a href="laporan.php" class="nav-link"><i class="fa-solid fa-file-lines me-2"></i> Laporan</a></li>
     </ul>
-    <button class="btn btn-dark w-75 mx-auto mt-auto mb-4" onclick="logout()">
+    <a href="logout.php" class="btn btn-dark w-75 mx-auto mt-auto mb-4">
       <i class="fa-solid fa-right-from-bracket me-2"></i>Sign Out
-    </button>
+    </a>
   </aside>
 
 <div class="overlay"></div>
@@ -239,11 +239,6 @@
   });
 </script>
 
-
-
-<script src="./assets/bootstrap-5.3.8-dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/js/all.min.js"></script>
-
 <script>
 document.addEventListener("DOMContentLoaded", () => {
 
@@ -316,7 +311,7 @@ document.addEventListener("DOMContentLoaded", () => {
 </script>
 <script src="./assets/bootstrap-5.3.8-dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/js/all.min.js"></script>
-<script src="./assets/js/main.js"></script>
+<!-- <script src="./assets/js/main.js"></script> -->
 
 </body>
 </html>

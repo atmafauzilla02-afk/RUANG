@@ -208,14 +208,14 @@
    <img src="assets/img/logo final.png"  alt="logo">
    <hr>
     <ul class="nav flex-column mt-4">
-      <li><a href="dashboardRT.html" class="nav-link"><i class="fa-solid fa-house"></i>Dashboard</a></li>
-      <li><a href="persetujuan.html" class="nav-link active"><i class="fa-solid fa-file-signature"></i>Persetujuan</a></li>
-      <li><a href="pengeluaranRT.html" class="nav-link"><i class="fa-solid fa-coins"></i>Pengeluaran</a></li>
-      <li><a href="laporanRT.html" class="nav-link"><i class="fa-solid fa-file-lines"></i>Laporan</a></li>
+      <li><a href="dashboardRT.php" class="nav-link"><i class="fa-solid fa-house"></i>Dashboard</a></li>
+      <li><a href="persetujuan.php" class="nav-link active"><i class="fa-solid fa-file-signature"></i>Persetujuan</a></li>
+      <li><a href="pengeluaranRT.php" class="nav-link"><i class="fa-solid fa-coins"></i>Pengeluaran</a></li>
+      <li><a href="laporanRT.php" class="nav-link"><i class="fa-solid fa-file-lines"></i>Laporan</a></li>
     </ul>
-    <button class="btn btn-dark w-75 mx-auto mt-auto mb-4" onclick="logout()">
+    <a href="logout.php" class="btn btn-dark w-75 mx-auto mt-auto mb-4">
       <i class="fa-solid fa-right-from-bracket me-2"></i>Sign Out
-    </button>
+    </a>
   </aside>
 
   <div id="overlay" class="overlay"></div>

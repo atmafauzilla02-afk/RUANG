@@ -185,15 +185,15 @@
      <img src="./assets/img/logo final.png" alt="logo" >
     <hr>
     <ul class="nav flex-column mt-4">
-      <li><a href="dashboardBendahara.html" class="nav-link"><i class="fa-solid fa-house me-2"></i> Dashboard</a></li>
-      <li><a href="iuran.html" class="nav-link"><i class="fa-solid fa-wallet me-2"></i> Iuran</a></li>
-      <li><a href="kelola_warga.html" class="nav-link"><i class="fa-solid fa-users me-2"></i>Kelola Warga</a></li>
-      <li><a href="Pengajuan.html" class="nav-link active" ><i class="fa-solid fa-file-import me-2"></i> Pengajuan</a></li>
-      <li><a href="laporanBendahara.html" class="nav-link"><i class="fa-solid fa-file-lines me-2"></i> Laporan</a></li>
+      <li><a href="dashboardBendahara.php" class="nav-link"><i class="fa-solid fa-house me-2"></i> Dashboard</a></li>
+      <li><a href="iuran.php" class="nav-link"><i class="fa-solid fa-wallet me-2"></i> Iuran</a></li>
+      <li><a href="kelola_warga.php" class="nav-link"><i class="fa-solid fa-users me-2"></i>Kelola Warga</a></li>
+      <li><a href="Pengajuan.php" class="nav-link active" ><i class="fa-solid fa-file-import me-2"></i> Pengajuan</a></li>
+      <li><a href="laporanBendahara.php" class="nav-link"><i class="fa-solid fa-file-lines me-2"></i> Laporan</a></li>
     </ul>
-    <button class="btn btn-dark w-75 mx-auto mt-auto mb-4" onclick="logout()">
+    <a href="logout.php" class="btn btn-dark w-75 mx-auto mt-auto mb-4">
       <i class="fa-solid fa-right-from-bracket me-2"></i>Sign Out
-    </button>
+    </a>
   </aside>
 
   <!-- Main -->

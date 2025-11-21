@@ -1,3 +1,15 @@
+<?php
+session_start();
+if (!isset($_SESSION['id_user'])) {
+    echo "<script>
+        alert('Anda harus login terlebih dahulu!');
+        window.location.href = './login.php';
+
+    </script>";
+    exit;
+}
+?>
+
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -268,11 +280,11 @@
      <img src="./assets/img/logo final.png" alt="logo" >
     <hr>
     <ul class="nav flex-column mt-4">
-      <li><a href="dashboardBendahara.html" class="nav-link"><i class="fa-solid fa-house me-2"></i>Dashboard</a></li>
-      <li><a href="iuran.html" class="nav-link"><i class="fa-solid fa-wallet me-2"></i>Iuran</a></li>
-      <li><a href="kelola_warga.html" class="nav-link active"><i class="fa-solid fa-users me-2"></i>Kelola Warga</a></li>
-      <li><a href="Pengajuan.html" class="nav-link"><i class="fa-solid fa-file-import me-2"></i>Pengajuan</a></li>
-      <li><a href="laporanBendahara.html" class="nav-link"><i class="fa-solid fa-file-lines me-2"></i>Laporan</a></li>
+      <li><a href="dashboardBendahara.php" class="nav-link"><i class="fa-solid fa-house me-2"></i>Dashboard</a></li>
+      <li><a href="iuran.php" class="nav-link"><i class="fa-solid fa-wallet me-2"></i>Iuran</a></li>
+      <li><a href="kelola_warga.php" class="nav-link active"><i class="fa-solid fa-users me-2"></i>Kelola Warga</a></li>
+      <li><a href="Pengajuan.php" class="nav-link"><i class="fa-solid fa-file-import me-2"></i>Pengajuan</a></li>
+      <li><a href="laporanBendahara.php" class="nav-link"><i class="fa-solid fa-file-lines me-2"></i>Laporan</a></li>
     </ul>
     <button class="logout-btn" onclick="logout()">
       <i class="fa-solid fa-right-from-bracket me-2"></i>Sign Out
@@ -310,13 +322,85 @@
               <th>Aksi</th>
             </tr>
           </thead>
-          <tbody id="wargaList"></tbody>
+          <tbody id="wargaList">
+             <?php 
+                   include 'koneksi/koneksi.php';
+                    $query = mysqli_query($koneksi, "SELECT * FROM warga"); 
+                    while ($data = mysqli_fetch_assoc($query)) { 
+                    ?> 
+                        <tr> 
+                            <td><?php echo $data['nama_warga']; ?></td> 
+                            <td><?php echo $data['nik']; ?></td> 
+                            <td><?php echo $data['alamat']; ?></td> 
+                            <td><?php echo $data['no_telp']; ?></td> 
+                            <td>
+                                <a href="kelola_warga.php?edit=<?= $data['id_warga']; ?>" class="btn btn-warning btn-sm">
+                                <i class="fa-solid fa-pen"></i>
+                                </a>
+                                <form action="aksi/hapus_kelola_warga.php" method="POST" style="display:inline;" onsubmit="return confirm('Yakin hapus data ini?');">
+                                  <input type="hidden" name="id" value="<?= $data['id_warga']; ?>">
+                                  <button type="submit" class="btn btn-danger btn-sm"><i class="fa-solid fa-trash"></i></button>
+                                </form>
+
+                            </td>
+                        </tr> 
+              <?php } ?>
+                      
+          </tbody>
         </table>
       </div>
     </div>
   </main>
 
-  <!-- MODAL -->
+  <?php
+$editId = 0;
+$editNama = $editNIK = $editAlamat = $editTelp = "";
+
+if(isset($_GET['edit'])){
+    $editId = $_GET['edit'];
+    $queryEdit = mysqli_query($koneksi, "SELECT * FROM warga WHERE id_warga='$editId'");
+    $row = mysqli_fetch_assoc($queryEdit);
+    $editNama = $row['nama_warga'];
+    $editNIK = $row['nik'];
+    $editAlamat = $row['alamat'];
+    $editTelp = $row['no_telp'];
+}
+?>
+
+  <!-- MODAL EDIT WARGA -->
+  <div class="modal fade <?= $editId ? 'show' : '' ?>" id="modalWarga" tabindex="-1" <?= $editId ? 'style="display:block;"' : '' ?> aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content rounded-4 shadow-lg">
+        <div class="modal-header bg-warning border-0">
+          <h5 class="modal-title fw-bold" id="modalTitle"><?= $editId ? 'Edit Warga' : 'Tambah Warga' ?></h5>
+          <a href="kelola_warga.php" class="btn-close"></a>
+        </div>
+        <div class="modal-body">
+          <form action="<?= $editId ? 'aksi/edit_kelola_warga.php' : 'aksi/tambah_kelola_warga.php' ?>" method="POST">
+            <input type="hidden" name="id_warga" value="<?= $editId ?>">
+
+            <label for="nama_warga" class="form-label">Nama</label>
+            <input type="text" name="nama_warga" class="form-control mb-2" required value="<?= $editNama ?>">
+
+            <label for="nik" class="form-label">NIK</label>
+            <input type="text" name="nik" class="form-control mb-2" required value="<?= $editNIK ?>">
+
+            <label for="alamat" class="form-label">Alamat</label>
+            <input type="text" name="alamat" class="form-control mb-2" required value="<?= $editAlamat ?>">
+
+            <label for="no_telp" class="form-label">No Telepon</label>
+            <input type="text" name="no_telp" class="form-control mb-3" required value="<?= $editTelp ?>">
+
+            <button type="submit" class="btn btn-success w-100 fw-semibold">
+                <?= $editId ? "Update" : "Simpan" ?>
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL TAMBAH WARGA-->
   <div class="modal fade" id="modalWarga" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
       <div class="modal-content rounded-4 shadow-lg">
@@ -325,20 +409,20 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
-          <form id="wargaForm">
+          <form action="aksi/tambah_kelola_warga.php" method="POST" id="wargaForm">
             <input type="hidden" id="wargaIndex" />
 
-            <label for="nama" class="form-label">Nama</label>
-            <input type="text" id="nama" class="form-control mb-2" required />
+            <label for="nama_warga" class="form-label">Nama</label>
+            <input type="text" id="nama_warga" name="nama_warga" class="form-control mb-2" required />
 
             <label for="nik" class="form-label">NIK</label>
-            <input type="text" id="nik" class="form-control mb-2" required />
+            <input type="text" id="nik" name="nik" class="form-control mb-2" required />
 
             <label for="alamat" class="form-label">Alamat</label>
-            <input type="text" id="alamat" class="form-control mb-2" required />
+            <input type="text" id="alamat" name="alamat" class="form-control mb-2" required />
 
-            <label for="telp" class="form-label">No Telepon</label>
-            <input type="text" id="telp" class="form-control mb-3" required />
+            <label for="no_telp" class="form-label">No Telepon</label>
+            <input type="text" id="no_telp" name="no_telp" class="form-control mb-3" required />
 
             <button type="submit" class="btn btn-success w-100 fw-semibold">Simpan</button>
           </form>
@@ -348,123 +432,36 @@
   </div>
 
   <script src="./assets/bootstrap-5.3.8-dist/js/bootstrap.bundle.min.js"></script>
-   <script>
-    const sidebar = document.getElementById("sidebar");
-    const menuToggle = document.getElementById("menuToggle");
-
-    // Toggle sidebar (mobile)
-    menuToggle.addEventListener("click", (e) => {
-      e.stopPropagation();
-      sidebar.classList.toggle("active");
-    });
-
-    // Tutup sidebar kalau klik di luar
-    document.addEventListener("click", (e) => {
-      const isMobile = window.innerWidth <= 992;
-      const clickedInsideSidebar = sidebar.contains(e.target);
-      const clickedToggle = menuToggle.contains(e.target);
-      if (isMobile && sidebar.classList.contains("active") && !clickedInsideSidebar && !clickedToggle) {
-        sidebar.classList.remove("active");
-      }
-    });
-    // Dummy data
-    let warga = [
-      { nama: "Sri Rahayu", nik: "3210123456789012", alamat: "Jl. Mawar No. 12", telp: "08123456700" },
-      { nama: "Budi Surecep", nik: "3210123456789013", alamat: "Jl. Kenanga No. 7", telp: "081234567891" },
-      { nama: "Ayu Lestari", nik: "3210123456789014", alamat: "Jl. Melati No. 3", telp: "081234567892" },
-      { nama: "Joko Hartono", nik: "3210123456789015", alamat: "Jl. Anggrek No. 8", telp: "081234567893" },
-      { nama: "Fitri Handayani", nik: "3210123456789016", alamat: "Jl. Dahlia No. 5", telp: "081234567894" },
-      { nama: "Rahmat Hidayat", nik: "3210123456789017", alamat: "Jl. Cempaka No. 9", telp: "081234567895" },
-      { nama: "Dewi Sartika", nik: "3210123456789018", alamat: "Jl. Nusa Indah No. 4", telp: "081234567896" },
-      { nama: "Ahmad Fauzi", nik: "3210123456789019", alamat: "Jl. Teratai No. 10", telp: "081234567897" },
-      { nama: "Siti Aminah", nik: "3210123456789020", alamat: "Jl. Flamboyan No. 2", telp: "081234567898" },
-      { nama: "Yanto Prabowo", nik: "3210123456789021", alamat: "Jl. Merpati No. 11", telp: "081234567899" }
-    ];
-
-    const wargaList = document.getElementById("wargaList");
-    const form = document.getElementById("wargaForm");
-    const modal = new bootstrap.Modal(document.getElementById("modalWarga"));
-    const searchNama = document.getElementById("searchNama");
-    const searchNIK = document.getElementById("searchNIK");
-
-    function renderTable(data) {
-      wargaList.innerHTML = data.map((w, i) => `
-        <tr>
-          <td>${w.nama}</td>
-          <td>${w.nik}</td>
-          <td>${w.alamat}</td>
-          <td>${w.telp}</td>
-          <td>
-            <button class="btn btn-primary btn-sm" onclick="editWarga(${i})"><i class="fa-solid fa-pen"></i></button>
-            <button class="btn btn-danger btn-sm" onclick="hapusWarga(${i})"><i class="fa-solid fa-trash"></i></button>
-          </td>
-        </tr>
-      `).join("");
-    }
-
-    renderTable(warga);
-
-    searchNama.addEventListener("input", filterData);
-    searchNIK.addEventListener("input", filterData);
-
-    function filterData() {
-      const namaKey = searchNama.value.toLowerCase();
-      const nikKey = searchNIK.value.toLowerCase();
-      const filtered = warga.filter(
-        (w) => w.nama.toLowerCase().includes(namaKey) && w.nik.includes(nikKey)
-      );
-
-      
-      renderTable(filtered);
-    }
-  </script>
-
   <script>
-  
 
-  // Fungsi untuk edit warga
-  function editWarga(index) {
-    const w = warga[index];
-    document.getElementById("modalTitle").innerText = "Edit Warga";
-    document.getElementById("wargaIndex").value = index;
-    document.getElementById("nama").value = w.nama;
-    document.getElementById("nik").value = w.nik;
-    document.getElementById("alamat").value = w.alamat;
-    document.getElementById("telp").value = w.telp;
-    modal.show();
-  }
+// === FILTER CARI NAMA ===
+document.getElementById("searchNama").addEventListener("keyup", function () {
+    let filter = this.value.toLowerCase();
+    let rows = document.querySelectorAll("#wargaList tr");
 
-  // Fungsi untuk hapus warga
-  function hapusWarga(index) {
-    if (confirm(`Apakah kamu yakin ingin menghapus data ${warga[index].nama}?`)) {
-      warga.splice(index, 1);
-      renderTable(warga);
-    }
-  }
+    rows.forEach(row => {
+        let nama = row.cells[0].textContent.toLowerCase();
+        row.style.display = nama.includes(filter) ? "" : "none";
+    });
+});
 
-  // Fungsi simpan (untuk tambah / edit)
-  form.addEventListener("submit", (e) => {
-    e.preventDefault();
-    const index = document.getElementById("wargaIndex").value;
-    const newData = {
-      nama: document.getElementById("nama").value,
-      nik: document.getElementById("nik").value,
-      alamat: document.getElementById("alamat").value,
-      telp: document.getElementById("telp").value,
-    };
+// === FILTER CARI NIK ===
+document.getElementById("searchNIK").addEventListener("keyup", function () {
+    let filter = this.value.toLowerCase();
+    let rows = document.querySelectorAll("#wargaList tr");
 
-    if (index === "") {
-      warga.push(newData);
-    } else {
-      warga[index] = newData;
-    }
+    rows.forEach(row => {
+        let nik = row.cells[1].textContent.toLowerCase();
+        row.style.display = nik.includes(filter) ? "" : "none";
+    });
+});
 
-    modal.hide();
-    renderTable(warga);
-    form.reset();
-    document.getElementById("modalTitle").innerText = "Tambah Warga";
-  });
+// === TOGGLE SIDEBAR MOBILE ===
+document.getElementById("menuToggle").addEventListener("click", function () {
+    document.getElementById("sidebar").classList.toggle("active");
+});
 </script>
+
 
 </body>
 </html>
