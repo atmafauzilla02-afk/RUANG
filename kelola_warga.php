@@ -1,6 +1,6 @@
 <?php
 session_start();
-if (!isset($_SESSION['id_user'])) {
+if (!isset($_SESSION['id_pengguna'])) {
     echo "<script>
         alert('Anda harus login terlebih dahulu!');
         window.location.href = './login.php';
@@ -325,11 +325,11 @@ if (!isset($_SESSION['id_user'])) {
           <tbody id="wargaList">
              <?php 
                    include 'koneksi/koneksi.php';
-                    $query = mysqli_query($koneksi, "SELECT * FROM warga"); 
+                    $query = mysqli_query($koneksi, "SELECT w.id_warga, p.nama, p.nik, p.alamat, p.no_telp FROM warga w JOIN pengguna p ON w.id_pengguna = p.id_pengguna"); 
                     while ($data = mysqli_fetch_assoc($query)) { 
                     ?> 
                         <tr> 
-                            <td><?php echo $data['nama_warga']; ?></td> 
+                            <td><?php echo $data['nama']; ?></td> 
                             <td><?php echo $data['nik']; ?></td> 
                             <td><?php echo $data['alamat']; ?></td> 
                             <td><?php echo $data['no_telp']; ?></td> 
@@ -358,9 +358,9 @@ $editNama = $editNIK = $editAlamat = $editTelp = "";
 
 if(isset($_GET['edit'])){
     $editId = $_GET['edit'];
-    $queryEdit = mysqli_query($koneksi, "SELECT * FROM warga WHERE id_warga='$editId'");
+    $queryEdit = mysqli_query($koneksi, "SELECT p.nama, p.nik, p.alamat, p.no_telp FROM warga w JOIN pengguna p ON w.id_pengguna = p.id_pengguna WHERE w.id_warga='$editId'");
     $row = mysqli_fetch_assoc($queryEdit);
-    $editNama = $row['nama_warga'];
+    $editNama = $row['nama'];
     $editNIK = $row['nik'];
     $editAlamat = $row['alamat'];
     $editTelp = $row['no_telp'];

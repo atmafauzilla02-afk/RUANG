@@ -1,10 +1,8 @@
 <?php
 session_start();
-
 include '../koneksi/koneksi.php';
 
-// Cek user sudah login
-if (!isset($_SESSION['id_user'])) {
+if (!isset($_SESSION['id_pengguna'])) {
     echo "<script>
         alert('Anda harus login terlebih dahulu!');
         window.location.href = '../login.php';
@@ -12,37 +10,46 @@ if (!isset($_SESSION['id_user'])) {
     exit;
 }
 
-// Ambil id_user dari session
-$id_user = $_SESSION['id_user'];
-
-// form dikirim POST
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-    // Ambil input form
     $nama_warga = $_POST['nama_warga'] ?? '';
     $nik        = $_POST['nik'] ?? '';
     $alamat     = $_POST['alamat'] ?? '';
     $no_telp    = $_POST['no_telp'] ?? '';
 
-    // NILAI DEFAULT 
-    $rt     = 0;            
-    $rw     = 0;            
-    $status = "Aktif";      
+    // default password
+    $default_password = password_hash('password123', PASSWORD_DEFAULT);
 
-    // Query insert
-    $input = mysqli_query($koneksi, 
-        "INSERT INTO warga (id_user, nama_warga, nik, alamat, no_telp, rt, rw, status) 
-         VALUES ('$id_user', '$nama_warga', '$nik', '$alamat', '$no_telp', '$rt', '$rw', '$status')"
+    // 1. INSERT KE PENGGUNA
+    $sqlPengguna = mysqli_query($koneksi, 
+        "INSERT INTO pengguna (nik, nama, alamat, no_telp, role, password) 
+         VALUES ('$nik', '$nama_warga', '$alamat', '$no_telp', 'warga', '$default_password')"
     );
 
-    if ($input) {
+    if (!$sqlPengguna) {
         echo "<script>
-            alert('Data Berhasil Disimpan');
+                alert('Gagal insert pengguna: ".mysqli_error($koneksi)."');
+                window.history.back();
+              </script>";
+        exit;
+    }
+
+    // 2. AMBIL id_pengguna TERAKHIR
+    $id_pengguna_baru = mysqli_insert_id($koneksi);
+
+    // 3. INSERT KE WARGA
+    $sqlWarga = mysqli_query($koneksi,
+        "INSERT INTO warga (id_pengguna) VALUES ('$id_pengguna_baru')"
+    );
+
+    if ($sqlWarga) {
+        echo "<script>
+            alert('Data Berhasil Disimpan!');
             window.location.href = '../kelola_warga.php';
         </script>";
     } else {
         echo "<script>
-            alert('Gagal Menyimpan Data: ".mysqli_error($koneksi)."');
+            alert('Gagal insert ke tabel warga: ".mysqli_error($koneksi)."');
             window.history.back();
         </script>";
     }

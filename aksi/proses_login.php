@@ -6,13 +6,13 @@ if (isset($_POST['submit'])) {
     $nik = $_POST['nik'];
     $password = $_POST['password'];
 
-    $query = mysqli_query($koneksi, "SELECT * FROM user WHERE nik='$nik' AND password='$password'");;
+    $query = mysqli_query($koneksi, "SELECT * FROM pengguna WHERE nik='$nik' AND password='$password'");;
     $cek = mysqli_num_rows($query);
     $data = mysqli_fetch_array($query);
 
     if ($cek > 0) {
         session_start();
-        $_SESSION['id_user'] = $data['id_user'];
+        $_SESSION['id_pengguna'] = $data['id_pengguna'];
         $_SESSION['nik'] = $data['nik'];
         $_SESSION['role'] = $data['role'];
 
