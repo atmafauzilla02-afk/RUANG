@@ -2,31 +2,47 @@
 include '../koneksi/koneksi.php';
 
 if (isset($_POST['submit'])) {
-
     $nik = $_POST['nik'];
     $password = $_POST['password'];
 
-    $query = mysqli_query($koneksi, "SELECT * FROM user WHERE nik='$nik' AND password='$password'");;
+    $query = mysqli_query($koneksi, "SELECT * FROM pengguna WHERE nik='$nik' AND password='$password'");
+
+    if (!$query) {
+        die("Query Error: " . mysqli_error($koneksi));
+    }
+
     $cek = mysqli_num_rows($query);
-    $data = mysqli_fetch_array($query);
+    $data = mysqli_fetch_assoc($query);
 
     if ($cek > 0) {
         session_start();
-        $_SESSION['id_user'] = $data['id_user'];
+        
+        $_SESSION['id_pengguna'] = $data['id_pengguna'];
         $_SESSION['nik'] = $data['nik'];
         $_SESSION['role'] = $data['role'];
 
-        if ($data['role'] == 'warga') {
+        if ($data['role'] === 'warga') {
+
             header("Location: ../dashboard.php");
-        } elseif ($data['role'] == 'bendahara') {
+
+        } else if ($data['role'] === 'bendahara') {
+
+            $qB = mysqli_query($koneksi, "SELECT * FROM bendahara WHERE id_pengguna='$data[id_pengguna]'");
+            $bendahara = mysqli_fetch_assoc($qB);
+
+            $_SESSION['id_bendahara'] = $bendahara['id_bendahara'];
+
             header("Location: ../dashboardBendahara.php");
-        } elseif ($data['role'] == 'rt') {
+
+        } else if ($data['role'] === 'ketua') {
+
             header("Location: ../dashboardRT.php");
-        } else {
-            echo "<script>alert('Role tidak dikenali.'); window.location='../index.php';</script>";
+
         }
+
     } else {
         echo "<script>alert('NIK atau kata sandi salah.'); window.location='../index.php';</script>";
     }
+
 }
 ?>

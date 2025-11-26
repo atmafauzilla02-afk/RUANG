@@ -1,3 +1,46 @@
+<?php
+include "koneksi/koneksi.php";
+include "auth.php";
+
+$saldoQuery = mysqli_query($koneksi,
+"SELECT 
+    (SELECT IFNULL(SUM(nominal_pembayaran),0) FROM pembayaran WHERE status_pembayaran='lunas') -
+    (SELECT IFNULL(SUM(nominal_pengeluaran),0) FROM pengeluaran WHERE status_persetujuan='disetujui')
+AS saldo"
+);
+$saldo = mysqli_fetch_assoc($saldoQuery)['saldo'];
+
+$tunggakanQuery = mysqli_query($koneksi,
+"SELECT COUNT(*) AS total
+ FROM pembayaran WHERE status_pembayaran IN ('belum','menunggu')"
+);
+$tunggakan = mysqli_fetch_assoc($tunggakanQuery)['total'];
+
+$pemasukanQuery = mysqli_query($koneksi,
+"SELECT IFNULL(SUM(nominal_pembayaran),0) AS total
+ FROM pembayaran
+ WHERE status_pembayaran='lunas'
+ AND bulan_pembayaran=MONTH(CURRENT_DATE())
+ AND tahun_pembayaran=YEAR(CURRENT_DATE())"
+);
+$pemasukan = mysqli_fetch_assoc($pemasukanQuery)['total'];
+
+$pengeluaranQuery = mysqli_query($koneksi,
+"SELECT IFNULL(SUM(nominal_pengeluaran),0) AS total
+ FROM pengeluaran
+ WHERE status_persetujuan='disetujui'
+ AND MONTH(tanggal_pengeluaran)=MONTH(CURRENT_DATE())
+ AND YEAR(tanggal_pengeluaran)=YEAR(CURRENT_DATE())"
+);
+$pengeluaran = mysqli_fetch_assoc($pengeluaranQuery)['total'];
+
+$notifQuery = mysqli_query($koneksi,
+"SELECT jenis_pembayaran, bulan_pembayaran, tahun_pembayaran, nominal_pembayaran
+ FROM pembayaran
+ WHERE status_pembayaran != 'lunas'"
+);
+?>
+
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -86,7 +129,7 @@
             <span>Total Saldo Kas</span>
             <i class="fa-solid fa-sack-dollar icon"></i>
           </div>
-          <h4>Rp32.850.000</h4>
+          <h4>Rp<?= number_format($saldo,0,',','.') ?></h4>
           <small class="text-muted">Saldo Realtime</small>
         </div>
       </div>
@@ -97,7 +140,7 @@
             <span>Iuran Tertunggak</span>
             <i class="fa-solid fa-wallet icon text-warning"></i>
           </div>
-          <h4>15 iuran</h4>
+          <h4><?= $tunggakan ?> iuran</h4>
           <small class="text-muted">Pada bulan ini</small>
         </div>
       </div>
@@ -108,7 +151,7 @@
             <span>Pemasukan Bulan Ini</span>
             <i class="fa-solid fa-arrow-trend-up icon text-success"></i>
           </div>
-          <h4 class="text-success">Rp2.957.000</h4>
+          <h4 class="text-success">Rp<?= number_format($pemasukan,0,',','.') ?></h4>
           <small class="text-muted">Pemasukan bulan September</small>
         </div>
       </div>
@@ -119,7 +162,7 @@
             <span>Pengeluaran Bulan Ini</span>
             <i class="fa-solid fa-arrow-trend-down icon text-danger"></i>
           </div>
-          <h4 class="text-danger">Rp780.000</h4>
+          <h4 class="text-danger">Rp<?= number_format($pengeluaran,0,',','.') ?></h4>
           <small class="text-muted">Pengeluaran bulan September</small>
         </div>
       </div>
@@ -151,9 +194,7 @@
 <script>
   // === Data Grafik Dummy ===
   const chartData = {
-    2024: { pemasukan: [6,7,8,9,10,11,12,10,9], pengeluaran: [4,5,5,6,5,6,7,6,5] },
-    2025: { pemasukan: [8,10,9,11,14,8,10,9,15], pengeluaran: [5,6,7,8,6,5,7,6,8] },
-    2026: { pemasukan: [10,11,12,10,13,14,13,12,15], pengeluaran: [6,6,7,7,8,8,9,8,7] }
+  <?= json_encode($chartDataFromDB) ?>;
   };
 
   let currentYear = 2025;
@@ -204,9 +245,12 @@
 <script>
 document.addEventListener("DOMContentLoaded", () => {
   const iuranBelumLunas = [
-    { nama: "Iuran Kas - Februari 2025", nominal: "Rp50.000" },
-    { nama: "Iuran Keamanan - Mei 2025", nominal: "Rp30.000" },
-    { nama: "Iuran Kebersihan - Maret 2025", nominal: "Rp25.000" }
+    <?php while($n = mysqli_fetch_assoc($notifQuery)) { ?>
+    {
+      nama: "<?= $n['jenis_pembayaran'] ?> - <?= $n['bulan_pembayaran'].' '.$n['tahun_pembayaran'] ?>",
+      nominal: "Rp<?= number_format($n['nominal_pembayaran'],0,',','.') ?>"
+    },
+    <?php } ?>
   ];
 
   const notifBtn = document.getElementById("notifButton");

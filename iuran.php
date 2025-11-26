@@ -402,66 +402,18 @@
     overlay.classList.remove("active");
   };
 
-  const dataWarga = [
+  let dataWarga = [];
 
-  { nama: "Asep Sunarso", kategori: "Iuran Kas", bulan: "Januari", tahun: 2025, nominal: 50000, status: "Menunggu", bukti: "./assets/img/bukti1.jpg" },
-  { nama: "Asep Sunarso", kategori: "Keamanan", bulan: "Januari", tahun: 2025, nominal: 30000, status: "Lunas", bukti: "./assets/img/bukti2.jpg" },
-  { nama: "Asep Sunarso", kategori: "Kebersihan", bulan: "Januari", tahun: 2025, nominal: 20000, status: "Belum", bukti: "" },
-  
-  { nama: "Budiono Siregar", kategori: "Iuran Kas", bulan: "Februari", tahun: 2025, nominal: 50000, status: "Lunas", bukti: "./assets/img/bukti3.jpg" },
-  { nama: "Budiono Siregar", kategori: "Keamanan", bulan: "Februari", tahun: 2025, nominal: 30000, status: "Belum", bukti: "" },
-  { nama: "Budiono Siregar", kategori: "Kebersihan", bulan: "Februari", tahun: 2025, nominal: 20000, status: "Menunggu", bukti: "" },
+  function loadData() {
+    fetch("aksi/get_iuran.php")
+      .then(res => res.json())
+      .then(res => {
+        dataWarga = res;
+        renderTable();
+      });
+  }
 
-  { nama: "Udin Selalu", kategori: "Iuran Kas", bulan: "Maret", tahun: 2025, nominal: 50000, status: "Belum", bukti: "" },
-  { nama: "Udin Selalu", kategori: "Keamanan", bulan: "Maret", tahun: 2025, nominal: 30000, status: "Lunas", bukti: "./assets/img/bukti4.jpg" },
-  { nama: "Udin Selalu", kategori: "Kebersihan", bulan: "Maret", tahun: 2025, nominal: 20000, status: "Menunggu", bukti: "" },
-
-  { nama: "Siti Aminah", kategori: "Iuran Kas", bulan: "April", tahun: 2025, nominal: 50000, status: "Menunggu", bukti: "" },
-  { nama: "Siti Aminah", kategori: "Keamanan", bulan: "April", tahun: 2025, nominal: 30000, status: "Lunas", bukti: "" },
-  { nama: "Siti Aminah", kategori: "Kebersihan", bulan: "April", tahun: 2025, nominal: 20000, status: "Lunas", bukti: "" },
-
-  { nama: "Budi Hartono", kategori: "Iuran Kas", bulan: "Mei", tahun: 2025, nominal: 50000, status: "Lunas", bukti: "" },
-  { nama: "Budi Hartono", kategori: "Keamanan", bulan: "Mei", tahun: 2025, nominal: 30000, status: "Menunggu", bukti: "" },
-  { nama: "Budi Hartono", kategori: "Kebersihan", bulan: "Mei", tahun: 2025, nominal: 20000, status: "Belum", bukti: "" },
-
-  { nama: "Sri Wulandari", kategori: "Iuran Kas", bulan: "Juni", tahun: 2025, nominal: 50000, status: "Lunas", bukti: "" },
-  { nama: "Sri Wulandari", kategori: "Keamanan", bulan: "Juni", tahun: 2025, nominal: 30000, status: "Lunas", bukti: "" },
-  { nama: "Sri Wulandari", kategori: "Kebersihan", bulan: "Juni", tahun: 2025, nominal: 20000, status: "Menunggu", bukti: "" },
-
-  { nama: "Joko Purnomo", kategori: "Iuran Kas", bulan: "Juli", tahun: 2025, nominal: 50000, status: "Belum", bukti: "" },
-  { nama: "Joko Purnomo", kategori: "Keamanan", bulan: "Juli", tahun: 2025, nominal: 30000, status: "Menunggu", bukti: "" },
-  { nama: "Joko Purnomo", kategori: "Kebersihan", bulan: "Juli", tahun: 2025, nominal: 20000, status: "Lunas", bukti: "" },
-
-
-  { nama: "Rina Oktaviani", kategori: "Iuran Kas", bulan: "Oktober", tahun: 2024, nominal: 50000, status: "Lunas", bukti: "" },
-  { nama: "Rina Oktaviani", kategori: "Keamanan", bulan: "Oktober", tahun: 2024, nominal: 30000, status: "Lunas", bukti: "" },
-  { nama: "Rina Oktaviani", kategori: "Kebersihan", bulan: "Oktober", tahun: 2024, nominal: 20000, status: "Menunggu", bukti: "" },
-
-  { nama: "Agus Setiawan", kategori: "Iuran Kas", bulan: "September", tahun: 2024, nominal: 50000, status: "Menunggu", bukti: "" },
-  { nama: "Agus Setiawan", kategori: "Keamanan", bulan: "September", tahun: 2024, nominal: 30000, status: "Belum", bukti: "" },
-  { nama: "Agus Setiawan", kategori: "Kebersihan", bulan: "September", tahun: 2024, nominal: 20000, status: "Lunas", bukti: "" },
-
-  { nama: "Nurhayati", kategori: "Iuran Kas", bulan: "Agustus", tahun: 2024, nominal: 50000, status: "Belum", bukti: "" },
-  { nama: "Nurhayati", kategori: "Keamanan", bulan: "Agustus", tahun: 2024, nominal: 30000, status: "Menunggu", bukti: "" },
-  { nama: "Nurhayati", kategori: "Kebersihan", bulan: "Agustus", tahun: 2024, nominal: 20000, status: "Lunas", bukti: "" },
-
-  { nama: "Fajar Ramadhan", kategori: "Iuran Kas", bulan: "Juli", tahun: 2024, nominal: 50000, status: "Lunas", bukti: "" },
-  { nama: "Fajar Ramadhan", kategori: "Keamanan", bulan: "Juli", tahun: 2024, nominal: 30000, status: "Lunas", bukti: "" },
-  { nama: "Fajar Ramadhan", kategori: "Kebersihan", bulan: "Juli", tahun: 2024, nominal: 20000, status: "Menunggu", bukti: "" },
-
-  { nama: "Dedi Supriyadi", kategori: "Iuran Kas", bulan: "Desember", tahun: 2023, nominal: 50000, status: "Lunas", bukti: "" },
-  { nama: "Dedi Supriyadi", kategori: "Keamanan", bulan: "Desember", tahun: 2023, nominal: 30000, status: "Lunas", bukti: "" },
-  { nama: "Dedi Supriyadi", kategori: "Kebersihan", bulan: "Desember", tahun: 2023, nominal: 20000, status: "Lunas", bukti: "" },
-
-  { nama: "Indah Pratiwi", kategori: "Iuran Kas", bulan: "November", tahun: 2023, nominal: 50000, status: "Menunggu", bukti: "" },
-  { nama: "Indah Pratiwi", kategori: "Keamanan", bulan: "November", tahun: 2023, nominal: 30000, status: "Belum", bukti: "" },
-  { nama: "Indah Pratiwi", kategori: "Kebersihan", bulan: "November", tahun: 2023, nominal: 20000, status: "Lunas", bukti: "" },
-
-  { nama: "Rahmat Hidayat", kategori: "Iuran Kas", bulan: "Oktober", tahun: 2023, nominal: 50000, status: "Belum", bukti: "" },
-  { nama: "Rahmat Hidayat", kategori: "Keamanan", bulan: "Oktober", tahun: 2023, nominal: 30000, status: "Menunggu", bukti: "" },
-  { nama: "Rahmat Hidayat", kategori: "Kebersihan", bulan: "Oktober", tahun: 2023, nominal: 20000, status: "Lunas", bukti: "" },
-];
-
+  loadData();
 
   const tableBody = document.getElementById("tableBody");
 
@@ -607,6 +559,35 @@
     renderTable();
     alert("Pembayaran berhasil ditambahkan!");
   });
+
+  function renderTable() {
+  let tbody = document.getElementById("tableBody");
+  tbody.innerHTML = "";
+
+  dataWarga.forEach((item, index) => {
+    tbody.innerHTML += `
+      <tr>
+        <td>${item.nama}</td>
+        <td>${item.kategori}</td>
+        <td>${item.bulan_pembayaran} ${item.tahun_pembayaran}</td>
+        <td>${item.status}</td>
+        <td><button class="btn btn-info" onclick="viewDetail(${index})">Detail</button></td>
+      </tr>
+    `;
+  });
+}
+
+function updateStatus(id, status) {
+  fetch("aksi/update_status.php", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: `id=${id}&status=${status}`
+  })
+  .then(res => res.text())
+  .then(res => {
+    if (res === "success") loadData();
+  });
+}
 </script>
 
 
