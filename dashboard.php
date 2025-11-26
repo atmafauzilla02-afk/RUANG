@@ -187,110 +187,29 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
 <script>
-  // === Data Dummy Grafik ===
-  const chartData = {
-    2024: { pemasukan: [6,7,8,9,10,11,12,10,9], pengeluaran: [4,5,5,6,5,6,7,6,5] },
-    2025: { pemasukan: [8,10,9,11,14,8,10,9,15], pengeluaran: [5,6,7,8,6,5,7,6,8] },
-    2026: { pemasukan: [10,11,12,10,13,14,13,12,15], pengeluaran: [6,6,7,7,8,8,9,8,7] }
-  };
+const REALTIME_URL = 'dashboard_realtime.php';
 
-  let currentYear = 2025;
-  const chartYearEl = document.getElementById('chartYear');
-  const ctx = document.getElementById('chartArea').getContext('2d');
+function updateKas() {
+    fetch(REALTIME_URL)
+        .then(res => res.json())
+        .then(data => {
+            // Sesuaikan ID ini dengan elemen HTML kamu
+            document.getElementById('total-saldo')?.innerText = data.saldo;
+            document.getElementById('pemasukan-bulan')?.innerText = data.pemasukan_bulan;
+            document.getElementById('pengeluaran-bulan')?.innerText = data.pengeluaran_bulan;
+            document.getElementById('waktu-update')?.innerText = 'Update: ' + data.updated_at;
 
-  // === Inisialisasi Chart ===
-  let chart = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep'],
-      datasets: [
-        { label:'Pemasukan', data: chartData[currentYear].pemasukan, backgroundColor:'#9dd6a4' },
-        { label:'Pengeluaran', data: chartData[currentYear].pengeluaran, backgroundColor:'#f78b89' }
-      ]
-    },
-    options: { responsive:true, plugins:{ legend:{ position:'bottom' } } }
-  });
+            // Jika kamu pakai Chart.js untuk grafik
+            if (typeof updateChart === 'function') {
+                updateChart(data); // kamu buat fungsi ini sendiri kalau perlu
+            }
+        })
+        .catch(err => console.log('Gagal update kas:', err));
+}
 
-  // === Fungsi update chart ===
-  function updateChart(year) {
-    chart.data.datasets[0].data = chartData[year].pemasukan;
-    chart.data.datasets[1].data = chartData[year].pengeluaran;
-    chartYearEl.textContent = year;
-    chart.update();
-  }
+updateKas();
 
-  // Tombol navigasi tahun
-  document.getElementById('prevYear').addEventListener('click', () => {
-    if (chartData[currentYear - 1]) {
-      currentYear--;
-      updateChart(currentYear);
-    } else {
-      alert('📅 Data tahun sebelumnya belum tersedia!');
-    }
-  });
-
-  document.getElementById('nextYear').addEventListener('click', () => {
-    if (chartData[currentYear + 1]) {
-      currentYear++;
-      updateChart(currentYear);
-    } else {
-      alert('📅 Data tahun berikutnya belum tersedia!');
-    }
-  });
-</script>
-
-<script>
-document.addEventListener("DOMContentLoaded", () => {
-
-  // === Data Dummy Notifikasi ===
-  const iuranBelumLunas = [
-    { nama: "Iuran Kas - Februari 2025", nominal: "Rp50.000" },
-    { nama: "Iuran Keamanan - Mei 2025", nominal: "Rp30.000" },
-    { nama: "Iuran Kebersihan - Maret 2025", nominal: "Rp25.000" }
-  ];
-
-  const notifBtn = document.getElementById("notifButton");
-  const notifList = document.getElementById("notifList");
-
-  // Cek elemen ada
-  if (!notifBtn || !notifList) {
-    console.error("❌ Elemen notifikasi tidak ditemukan!");
-    return;
-  }
-
-  // === Event Klik Ikon Notifikasi ===
-  notifBtn.addEventListener("click", () => {
-    notifList.innerHTML = "";
-
-    if (iuranBelumLunas.length === 0) {
-      notifList.innerHTML = `
-        <div class="text-center py-3">
-          <i class="fa-solid fa-circle-check fa-2x text-success mb-2"></i>
-          <p class="fw-semibold mb-0">Semua iuran sudah lunas 🎉</p>
-        </div>
-      `;
-    } else {
-      iuranBelumLunas.forEach(item => {
-        const el = document.createElement("div");
-        el.className = "list-group-item d-flex justify-content-between align-items-center border-0 border-bottom py-3";
-        el.innerHTML = `
-          <div class="d-flex align-items-center gap-3">
-            <i class="fa-solid fa-circle-exclamation text-warning fs-5"></i>
-            <div>
-              <p class="mb-0 fw-semibold">${item.nama}</p>
-              <small class="text-muted">Nominal: ${item.nominal}</small>
-            </div>
-        `;
-        notifList.appendChild(el); 
-      });
-    }
-
-    
-    const modal = new bootstrap.Modal(document.getElementById("notifModal"));
-    modal.show();
-  });
-
-});
+setInterval(updateKas, 8000);
 </script>
 
 <script>
