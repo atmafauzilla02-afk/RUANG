@@ -1,53 +1,31 @@
 <?php
 session_start();
-
 include '../koneksi/koneksi.php';
+if (!isset($_SESSION['id_pengguna'])) exit(header("Location: ../login.php"));
 
-// Cek user sudah login
-if (!isset($_SESSION['id_user'])) {
-    echo "<script>
-        alert('Anda harus login terlebih dahulu!');
-        window.location.href = '../login.php';
-    </script>";
-    exit;
+$nama    = trim($_POST['nama'] ?? '');
+$nik     = trim($_POST['nik'] ?? '');
+$alamat  = trim($_POST['alamat'] ?? '');
+$no_telp = trim($_POST['no_telp'] ?? '');
+
+if (empty($nama) || empty($nik) || empty($alamat) || empty($no_telp)) {
+    echo "<script>alert('Semua kolom wajib diisi!'); history.back();</script>"; exit();
 }
 
-// Ambil id_user dari session
-$id_user = $_SESSION['id_user'];
+// Cek NIK sudah ada?
+$cek = mysqli_prepare($koneksi, "SELECT id_pengguna FROM pengguna WHERE nik = ?");
+mysqli_stmt_bind_param($cek, "s", $nik);
+mysqli_stmt_execute($cek);
+if (mysqli_stmt_fetch($cek)) {
+    echo "<script>alert('NIK sudah terdaftar!'); history.back();</script>"; exit();
+}
 
-// form dikirim POST
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+$stmt = mysqli_prepare($koneksi, "INSERT INTO pengguna (nama, nik, alamat, no_telp, role) VALUES (?, ?, ?, ?, 'warga')");
+mysqli_stmt_bind_param($stmt, "ssss", $nama, $nik, $alamat, $no_telp);
 
-    // Ambil input form
-    $nama_warga = $_POST['nama_warga'] ?? '';
-    $nik        = $_POST['nik'] ?? '';
-    $alamat     = $_POST['alamat'] ?? '';
-    $no_telp    = $_POST['no_telp'] ?? '';
-
-    // NILAI DEFAULT 
-    $rt     = 0;            
-    $rw     = 0;            
-    $status = "Aktif";      
-
-    // Query insert
-    $input = mysqli_query($koneksi, 
-        "INSERT INTO warga (id_user, nama_warga, nik, alamat, no_telp, rt, rw, status) 
-         VALUES ('$id_user', '$nama_warga', '$nik', '$alamat', '$no_telp', '$rt', '$rw', '$status')"
-    );
-
-    if ($input) {
-        echo "<script>
-            alert('Data Berhasil Disimpan');
-            window.location.href = '../kelola_warga.php';
-        </script>";
-    } else {
-        echo "<script>
-            alert('Gagal Menyimpan Data: ".mysqli_error($koneksi)."');
-            window.history.back();
-        </script>";
-    }
-
+if (mysqli_stmt_execute($stmt)) {
+    echo "<script>alert('Warga berhasil ditambahkan!'); window.location='../kelola_warga.php';</script>";
 } else {
-    echo "Form tidak dikirim menggunakan POST.";
+    echo "<script>alert('Gagal menambah warga!'); history.back();</script>";
 }
 ?>

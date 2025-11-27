@@ -1,3 +1,63 @@
+<?php
+session_start();
+
+// Cek login & role ketua
+if (!isset($_SESSION['id_pengguna']) || $_SESSION['role'] !== 'ketua') {
+    header("Location: index.php");
+    exit;
+}
+
+// Koneksi Database (mysqli)
+$koneksi = mysqli_connect("localhost", "root", "", "ruang"); // sesuaikan nama DB
+if (!$koneksi) {
+    die("Koneksi gagal: " . mysqli_connect_error());
+}
+
+// Total Saldo Kas
+$masuk = mysqli_fetch_array(mysqli_query($koneksi, 
+    "SELECT COALESCE(SUM(nominal_pembayaran), 0) AS total 
+     FROM pembayaran 
+     WHERE status_pembayaran = 'lunas'"))[0];
+
+$keluar = mysqli_fetch_array(mysqli_query($koneksi, 
+    "SELECT COALESCE(SUM(nominal_pengeluaran), 0) AS total 
+     FROM pengeluaran 
+     WHERE status_persetujuan = 'Disetujui'"))[0];
+
+$saldo = $masuk - $keluar;
+
+// Iuran tertunggak bulan ini
+$bulan_eng = ['january','february','march','april','may','june','july','august','september','october','november','december'];
+$bulan_ini = $bulan_eng[date('n') - 1];  // ubah angka bulan jadi nama enum
+$tahun_ini = date('Y');
+
+$tunggakan = mysqli_fetch_array(mysqli_query($koneksi, 
+    "SELECT COUNT(*) AS jumlah 
+     FROM pembayaran 
+     WHERE status_pembayaran IN ('belum','menunggu')
+       AND bulan_pembayaran = '$bulan_ini'
+       AND tahun_pembayaran = $tahun_ini"
+))[0];
+
+// Pemasukan bulan ini
+$pemasukan_bulan_ini = mysqli_fetch_array(mysqli_query($koneksi, 
+    "SELECT COALESCE(SUM(nominal_pembayaran), 0) AS total 
+     FROM pembayaran 
+     WHERE status_pembayaran = 'lunas'
+       AND bulan_pembayaran = '$bulan_ini'
+       AND tahun_pembayaran = $tahun_ini"
+))[0];
+
+// Pengeluaran bulan ini (disetujui)
+$pengeluaran_bulan_ini = mysqli_fetch_array(mysqli_query($koneksi, 
+    "SELECT COALESCE(SUM(nominal_pengeluaran), 0) AS total 
+     FROM pengeluaran 
+     WHERE status_persetujuan = 'Disetujui'
+       AND MONTH(tanggal_pengeluaran) = MONTH(CURDATE())
+       AND YEAR(tanggal_pengeluaran) = YEAR(CURDATE())"
+))[0];
+?>
+
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -82,7 +142,7 @@
             <span>Total Saldo Kas</span>
             <i class="fa-solid fa-sack-dollar icon"></i>
           </div>
-          <h4>Rp32.850.000</h4>
+          <h4>Rp<?= number_format($saldo, 0, ',', '.') ?></h4>
           <small class="text-muted">Saldo Realtime</small>
         </div>
       </div>
@@ -93,7 +153,7 @@
             <span>Iuran Tertunggak</span>
             <i class="fa-solid fa-wallet icon text-warning"></i>
           </div>
-          <h4>15 iuran</h4>
+          <h4><?= $tunggakan ?> iuran</h4>
           <small class="text-muted">Pada bulan ini</small>
           
 
@@ -106,7 +166,7 @@
             <span>Pemasukan Bulan Ini</span>
             <i class="fa-solid fa-arrow-trend-up icon text-success"></i>
           </div>
-          <h4 class="text-success">Rp2.957.000</h4>
+          <h4 class="text-success">Rp<?= number_format($pemasukan_bulan_ini, 0, ',', '.') ?></h4>
           <small class="text-muted">Pemasukan bulan September</small>
         </div>
       </div>
@@ -117,18 +177,32 @@
             <span>Pengeluaran Bulan Ini</span>
             <i class="fa-solid fa-arrow-trend-down icon text-danger"></i>
           </div>
-          <h4 class="text-danger">Rp780.000</h4>
+          <h4 class="text-danger">Rp<?= number_format($pengeluaran_bulan_ini, 0, ',', '.') ?></h4>
           <small class="text-muted">Pengeluaran bulan September</small>
         </div>
       </div>
     </div>
 
 
-    <!-- GRAFIK -->
-     <div class="chart-card p-4 position-relative">
-  <h5 class="fw-semibold mb-3 text-center">
-    Grafik Pemasukan & Pengeluaran Tahun <span id="chartYear">2025</span>
-  </h5>
+        <!-- GRAFIK -->
+    <div class="chart-card p-4 position-relative bg-white rounded shadow-sm">
+      <h5 class="fw-semibold mb-4 text-center">
+        Grafik Pemasukan & Pengeluaran Tahun <span id="chartYear" class="text-primary">2025</span>
+      </h5>
+
+      <!-- Tombol Navigasi Tahun -->
+      <button id="prevYear" class="btn btn-sm btn-outline-secondary position-absolute top-50 start-0 translate-middle-y ms-3 z-3">
+        <i class="fa-solid fa-chevron-left"></i>
+      </button>
+      <button id="nextYear" class="btn btn-sm btn-outline-secondary position-absolute top-50 end-0 translate-middle-y me-3 z-3">
+        <i class="fa-solid fa-chevron-right"></i>
+      </button>
+
+      <!-- Wrapper biar tinggi tetap terjaga -->
+      <div class="position-relative" style="height: 380px;">
+        <canvas id="chartArea"></canvas>
+      </div>
+    </div>
 
   <!-- Tombol Navigasi Tahun -->
   <button id="prevYear" class="btn btn-light position-absolute top-50 start-0 translate-middle-y ms-3">
@@ -144,59 +218,79 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
 <script>
-  // === Data Dummy Grafik ===
-  const chartData = {
-    2024: { pemasukan: [6,7,8,9,10,11,12,10,9], pengeluaran: [4,5,5,6,5,6,7,6,5] },
-    2025: { pemasukan: [8,10,9,11,14,8,10,9,15], pengeluaran: [5,6,7,8,6,5,7,6,8] },
-    2026: { pemasukan: [10,11,12,10,13,14,13,12,15], pengeluaran: [6,6,7,7,8,8,9,8,7] }
-  };
+// === Variabel Global ===
+let currentYear = new Date().getFullYear();
+const ctx = document.getElementById('chartArea').getContext('2d');
+let chart;
 
-  let currentYear = 2025;
-  const chartYearEl = document.getElementById('chartYear');
-  const ctx = document.getElementById('chartArea').getContext('2d');
+// === Fungsi Load Data dari API ===
+async function loadChart(tahun) {
+    try {
+        const response = await fetch(`chart_data.php?tahun=${tahun}`);
+        const data = await response.json();
 
-  // === Inisialisasi Chart ===
-  let chart = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep'],
-      datasets: [
-        { label:'Pemasukan', data: chartData[currentYear].pemasukan, backgroundColor:'#9dd6a4' },
-        { label:'Pengeluaran', data: chartData[currentYear].pengeluaran, backgroundColor:'#f78b89' }
-      ]
-    },
-    options: { responsive:true, plugins:{ legend:{ position:'bottom' } } }
-  });
+        // Update teks tahun
+        document.getElementById('chartYear').textContent = tahun;
 
-  // === Fungsi update chart ===
-  function updateChart(year) {
-    chart.data.datasets[0].data = chartData[year].pemasukan;
-    chart.data.datasets[1].data = chartData[year].pengeluaran;
-    chartYearEl.textContent = year;
-    chart.update();
-  }
-
-  // Tombol navigasi tahun
-  document.getElementById('prevYear').addEventListener('click', () => {
-    if (chartData[currentYear - 1]) {
-      currentYear--;
-      updateChart(currentYear);
-    } else {
-      alert('📅 Data tahun sebelumnya belum tersedia!');
+        // Kalau chart belum dibuat → buat baru, kalau sudah ada → update data
+        if (!chart) {
+            chart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'],
+                    datasets: [
+                        {
+                            label: 'Pemasukan (Juta)',
+                            data: data.pemasukan,
+                            backgroundColor: '#9dd6a4',
+                            borderColor: '#6fbf7a',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Pengeluaran (Juta)',
+                            data: data.pengeluaran,
+                            backgroundColor: '#f78b89',
+                            borderColor: '#e74c3c',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    },
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        } else {
+            // Update data saja
+            chart.data.datasets[0].data = data.pemasukan;
+            chart.data.datasets[1].data = data.pengeluaran;
+            chart.update();
+        }
+    } catch (err) {
+        alert('Gagal memuat grafik: ' + err);
     }
-  });
+}
 
-  document.getElementById('nextYear').addEventListener('click', () => {
-    if (chartData[currentYear + 1]) {
-      currentYear++;
-      updateChart(currentYear);
-    } else {
-      alert('📅 Data tahun berikutnya belum tersedia!');
-    }
-  });
+// === Tombol Prev & Next Tahun ===
+document.getElementById('prevYear').addEventListener('click', () => {
+    currentYear--;
+    loadChart(currentYear);
+});
+
+document.getElementById('nextYear').addEventListener('click', () => {
+    currentYear++;
+    loadChart(currentYear);
+});
+
+// === Load pertama kali saat halaman dibuka ===
+loadChart(currentYear);
 </script>
-
-
 
 <script src="./assets/bootstrap-5.3.8-dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/js/all.min.js"></script>
