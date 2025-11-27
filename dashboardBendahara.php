@@ -290,7 +290,7 @@ loadChart(currentYear);
 document.addEventListener("DOMContentLoaded", () => {
   const iuranBelumLunas = [
     <?php while($n = mysqli_fetch_assoc($notifQuery)) { ?>
-    {
+    , {
       nama: "<?= $n['jenis_pembayaran'] ?> - <?= $n['bulan_pembayaran'].' '.$n['tahun_pembayaran'] ?>",
       nominal: "Rp<?= number_format($n['nominal_pembayaran'],0,',','.') ?>"
     },

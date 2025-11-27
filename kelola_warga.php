@@ -404,9 +404,9 @@ $editNama = $editNIK = $editAlamat = $editTelp = "";
 
 if(isset($_GET['edit'])){
     $editId = $_GET['edit'];
-    $queryEdit = mysqli_query($koneksi, "SELECT * FROM warga WHERE id_warga='$editId'");
+    $queryEdit = mysqli_query($koneksi, "SELECT p.nama, p.nik, p.alamat, p.no_telp FROM warga w JOIN pengguna p ON w.id_pengguna = p.id_pengguna WHERE w.id_warga='$editId'");
     $row = mysqli_fetch_assoc($queryEdit);
-    $editNama = $row['nama_warga'];
+    $editNama = $row['nama'];
     $editNIK = $row['nik'];
     $editAlamat = $row['alamat'];
     $editTelp = $row['no_telp'];
