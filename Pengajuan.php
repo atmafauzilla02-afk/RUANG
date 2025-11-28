@@ -202,40 +202,6 @@
       <h2 class="fw-bold">Data Pengajuan Tahun 2025</h2>
     </div>
 
-    <!-- Info Cards -->
-    <div class="row g-3 mb-4">
-      <div class="col-lg-4 col-md-6">
-        <div class="info-card">
-          <div class="d-flex justify-content-between align-items-center">
-            <span>Pemasukan Bulan Ini</span>
-            <i class="fa-solid fa-arrow-trend-up text-success"></i>
-          </div>
-          <h4 class="text-success">Rp3.200.000</h4>
-          <small class="text-muted">Bulan Oktober 2025</small>
-        </div>
-      </div>
-      <div class="col-lg-4 col-md-6">
-        <div class="info-card">
-          <div class="d-flex justify-content-between align-items-center">
-            <span>Pengeluaran Bulan Ini</span>
-            <i class="fa-solid fa-arrow-trend-down text-danger"></i>
-          </div>
-          <h4 class="text-danger">Rp2.450.000</h4>
-          <small class="text-muted">Bulan Oktober 2025</small>
-        </div>
-      </div>
-      <div class="col-lg-4 col-md-12">
-        <div class="info-card">
-          <div class="d-flex justify-content-between align-items-center">
-            <span>Total Saldo</span>
-            <i class="fa-solid fa-wallet text-warning"></i>
-          </div>
-          <h4>Rp40.550.000</h4>
-          <small class="text-muted">Saldo akhir Oktober</small>
-        </div>
-      </div>
-    </div>
-
     <!-- Filter + Button -->
     <div class="filter-header">
       <div class="filter-container">
@@ -263,7 +229,7 @@
           <option value="Ditolak">Ditolak</option>
         </select>
       </div>
-      <button class="btn btn-dark">
+      <button class="btn btn-dark" id="btnTambahPengeluaran">
         <i class="fa-solid fa-plus me-1"></i> Ajukan Pengeluaran
       </button>
     </div>
@@ -322,7 +288,10 @@
       </div>
       <div class="modal-footer border-0">
         <button type="button" class="btn btn-warning text-dark fw-semibold" data-bs-dismiss="modal">Batal</button>
-        <button type="button" class="btn btn-dark fw-semibold" id="submitPengajuan">Kirim</button>
+        <button type="button" class="btn btn-dark fw-semibold" id="submitPengajuan">
+          <span class="spinner-border spinner-border-sm d-none" role="status" id="loadingSpinner"></span>
+          <span id="btnText">Kirim</span>
+        </button>
       </div>
     </div>
   </div>
@@ -345,153 +314,172 @@
 <div id="overlay"></div>
 
 <script src="./assets/bootstrap-5.3.8-dist/js/bootstrap.bundle.min.js"></script>
-<script>
-  // === Logout ===
-  function logout() {
-    alert("Logout berhasil!");
-    location.href = "index.html";
-  }
+  <script>
+    // ===== Global Variables =====
+    const sidebar = document.querySelector('.sidebar');
+    const overlay = document.getElementById('overlay');
+    const menuToggle = document.getElementById('menuToggle');
+    const listContainer = document.getElementById('pengajuanList');
+    let pengajuanData = [];
 
-  // === Tombol tambah pengeluaran (desktop) ===
-  document.querySelector('.btn-dark i.fa-plus').parentElement.addEventListener('click', () => {
-    new bootstrap.Modal(document.getElementById('tambahModal')).show();
-  });
+    // ===== Format Rupiah =====
+    const formatRupiah = (num) => 'Rp' + Number(num).toLocaleString('id-ID');
 
-  // === Data sementara untuk tambah pengajuan ===
-  let tempData = {};
-
-  document.getElementById('submitPengajuan').addEventListener('click', () => {
-    const judul = document.getElementById('judulInput').value.trim();
-    const keterangan = document.getElementById('keteranganInput').value.trim();
-    const nominal = parseInt(document.getElementById('nominalInput').value);
-    const kategori = document.getElementById('kategoriInput').value;
-
-    if (!judul || !keterangan || !nominal || isNaN(nominal)) {
-      alert("Semua field wajib diisi dengan benar!");
-      return;
-    }
-
-    tempData = {
-      judul,
-      deskripsi: keterangan,
-      nominal,
-      tanggal: new Date().toLocaleDateString('id-ID'),
-      kategori,
-      status: "Menunggu"
+    // ===== Render List =====
+    const renderList = (data) => {
+      listContainer.innerHTML = '';
+      if (!data || data.length === 0) {
+        listContainer.innerHTML = `<p class="text-center text-muted mt-4">Tidak ada data pengajuan</p>`;
+        return;
+      }
+      data.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'card-pengajuan';
+        card.innerHTML = `
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <h6 class="fw-semibold mb-1">${item.judul}</h6>
+              <p class="mb-0 text-muted small">${item.deskripsi || item.keterangan}</p>
+              <p class="mb-1 text-danger fw-semibold">${formatRupiah(item.nominal)}</p>
+              <small class="text-muted"><i class="fa-regular fa-calendar me-1"></i>${item.tanggal} | ${item.kategori}</small>
+            </div>
+            <span class="status ${item.status === 'Disetujui' ? 'status-disetujui' : item.status === 'Ditolak' ? 'status-ditolak' : 'status-menunggu'}">
+              ${item.status}
+            </span>
+          </div>
+        `;
+        card.onclick = () => showDetail(item);
+        listContainer.appendChild(card);
+      });
     };
 
-    const tambahModal = bootstrap.Modal.getInstance(document.getElementById('tambahModal'));
-    tambahModal.hide();
-    new bootstrap.Modal(document.getElementById('konfirmasiModal')).show();
-  });
-
-  document.getElementById('konfirmasiYa').addEventListener('click', () => {
-    if (Object.keys(tempData).length) {
-      pengajuanData.unshift(tempData);
-      renderList(pengajuanData);
-      tempData = {};
-      bootstrap.Modal.getInstance(document.getElementById('konfirmasiModal')).hide();
-    }
-  });
-</script>
-
-<script>
-  // === Data pengajuan ===
-  const pengajuanData = [
-    {judul:'Gaji Satpam Bulanan', deskripsi:'Gaji satpam bulan Oktober', nominal:2500000, tanggal:'01/10/2025', kategori:'Keamanan', status:'Disetujui'},
-    {judul:'Pengecatan Pos Ronda', deskripsi:'Cat dan peralatan untuk pos ronda', nominal:400000, tanggal:'12/09/2025', kategori:'Infrastruktur', status:'Menunggu'},
-    {judul:'Kegiatan 17 Agustus', deskripsi:'Pembelian hadiah lomba dan konsumsi', nominal:1500000, tanggal:'05/08/2025', kategori:'Kegiatan', status:'Ditolak'},
-    {judul:'Perbaikan Saluran Air', deskripsi:'Pembuatan saluran air RT 01', nominal:1200000, tanggal:'10/07/2025', kategori:'Infrastruktur', status:'Disetujui'},
-    {judul:'Lampu Jalan Baru', deskripsi:'Pemasangan 5 lampu jalan tambahan', nominal:750000, tanggal:'25/06/2025', kategori:'Keamanan', status:'Menunggu'}
-  ];
-
-  const listContainer = document.getElementById('pengajuanList');
-
-  function formatRupiah(num) {
-    return 'Rp' + num.toLocaleString('id-ID');
-  }
-
-  function renderList(data) {
-    listContainer.innerHTML = '';
-    if (!data.length) {
-      listContainer.innerHTML = `<p class="text-center text-muted mt-4">Tidak ada data pengajuan</p>`;
-      return;
-    }
-
-    data.forEach(item => {
-      const card = document.createElement('div');
-      card.className = 'card-pengajuan';
-      card.innerHTML = `
-        <div class="d-flex justify-content-between align-items-start">
-          <div>
-            <h6 class="fw-semibold mb-1">${item.judul}</h6>
-            <p class="mb-0 text-muted small">${item.deskripsi}</p>
-            <p class="mb-1 text-danger fw-semibold">${formatRupiah(item.nominal)}</p>
-            <small class="text-muted"><i class="fa-regular fa-calendar me-1"></i>${item.tanggal} | ${item.kategori}</small>
-          </div>
-          <span class="status ${item.status === 'Disetujui' ? 'status-disetujui' : item.status === 'Ditolak' ? 'status-ditolak' : 'status-menunggu'}">${item.status}</span>
-        </div>
+    // ===== Show Detail Modal =====
+    const showDetail = (item) => {
+      document.getElementById('detailBody').innerHTML = `
+        <p><strong>Judul:</strong> ${item.judul}</p>
+        <p><strong>Keterangan:</strong> ${item.deskripsi || item.keterangan}</p>
+        <p><strong>Nominal:</strong> ${formatRupiah(item.nominal)}</p>
+        <p><strong>Tanggal:</strong> ${item.tanggal}</p>
+        <p><strong>Kategori:</strong> ${item.kategori}</p>
+        <p><strong>Status:</strong> <span class="status ${item.status === 'Disetujui' ? 'status-disetujui' : item.status === 'Ditolak' ? 'status-ditolak' : 'status-menunggu'}">${item.status}</span></p>
       `;
-      card.addEventListener('click', () => showDetail(item));
-      listContainer.appendChild(card);
+      new bootstrap.Modal('#detailModal').show();
+    };
+
+    // ===== Debounce Filter =====
+    let debounceTimer;
+    const applyFilters = () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        const search = document.getElementById('searchInput').value.toLowerCase();
+        const kategori = document.getElementById('filterKategori').value;
+        const bulan = document.getElementById('filterBulan').value;
+        const tahun = document.getElementById('filterTahun').value;
+        const status = document.getElementById('filterStatus').value;
+
+        const filtered = pengajuanData.filter(p => {
+          const matchSearch = p.judul.toLowerCase().includes(search) || (p.deskripsi || p.keterangan || '').toLowerCase().includes(search);
+          const matchKategori = kategori === 'Semua' || p.kategori === kategori;
+          const matchStatus = status === 'Semua' || p.status === status;
+          const matchBulan = bulan === 'Semua' || p.tanggal.includes(bulan);
+          const matchTahun = tahun === 'Semua' || p.tanggal.includes(tahun);
+          return matchSearch && matchKategori && matchStatus && matchBulan && matchTahun;
+        });
+        renderList(filtered);
+      }, 300);
+    };
+
+    // ===== Load Data =====
+    const loadPengajuan = async () => {
+      try {
+        const res = await fetch('aksi/get_pengajuan.php');
+        if (!res.ok) throw new Error('Gagal mengambil data');
+        const data = await res.json();
+        pengajuanData = data;
+        renderList(data);
+      } catch (err) {
+        console.error(err);
+        listContainer.innerHTML = `<p class="text-danger text-center">Gagal memuat data pengajuan.</p>`;
+      }
+    };
+
+    // ===== Submit Pengajuan =====
+    document.getElementById('submitPengajuan').addEventListener('click', async () => {
+      const btn = document.getElementById('submitPengajuan');
+      const btnText = document.getElementById('btnText');
+      const spinner = document.getElementById('loadingSpinner');
+
+      const judul = document.getElementById('judulInput').value.trim();
+      const keterangan = document.getElementById('keteranganInput').value.trim();
+      const nominal = document.getElementById('nominalInput').value.trim();
+      const kategori = document.getElementById('kategoriInput').value;
+
+      if (!judul || !keterangan || !nominal || nominal <= 0) {
+        alert('Semua field wajib diisi dengan benar!');
+        return;
+      }
+
+      // Loading state
+      btn.disabled = true;
+      btnText.textContent = 'Mengirim...';
+      spinner.classList.remove('d-none');
+
+      const formData = new FormData();
+      formData.append('judul', judul);
+      formData.append('keterangan', keterangan);
+      formData.append('nominal', nominal);
+      formData.append('kategori', kategori);
+
+      try {
+        const res = await fetch('aksi/proses_pengeluaran.php', {
+          method: 'POST',
+          body: formData
+        });
+        const json = await res.json();
+
+        if (json.status === 'success') {
+          alert('Pengajuan berhasil dikirim!');
+          loadPengajuan();
+          bootstrap.Modal.getInstance(document.getElementById('tambahModal')).hide();
+          // Reset form
+          document.getElementById('judulInput').value = '';
+          document.getElementById('keteranganInput').value = '';
+          document.getElementById('nominalInput').value = '';
+        } else {
+          alert('Gagal: ' + (json.message || 'Terjadi kesalahan'));
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Error koneksi. Silakan coba lagi.');
+      } finally {
+        btn.disabled = false;
+        btnText.textContent = 'Kirim Pengajuan';
+        spinner.classList.add('d-none');
+      }
     });
-  }
 
-  function showDetail(item) {
-    document.getElementById('detailBody').innerHTML = `
-      <p><strong>Judul:</strong> ${item.judul}</p>
-      <p><strong>Deskripsi:</strong> ${item.deskripsi}</p>
-      <p><strong>Nominal:</strong> ${formatRupiah(item.nominal)}</p>
-      <p><strong>Tanggal:</strong> ${item.tanggal}</p>
-      <p><strong>Kategori:</strong> ${item.kategori}</p>
-      <p><strong>Status:</strong> ${item.status}</p>
-    `;
-    new bootstrap.Modal('#detailModal').show();
-  }
-
-  function applyFilters() {
-    const search = document.getElementById('searchInput').value.toLowerCase();
-    const kategori = document.getElementById('filterKategori').value;
-    const bulan = document.getElementById('filterBulan').value;
-    const tahun = document.getElementById('filterTahun').value;
-    const status = document.getElementById('filterStatus').value;
-
-    const filtered = pengajuanData.filter(p => {
-      const matchSearch = p.judul.toLowerCase().includes(search) || p.deskripsi.toLowerCase().includes(search);
-      const matchKategori = kategori === 'Semua' || p.kategori === kategori;
-      const matchStatus = status === 'Semua' || p.status === status;
-      const matchBulan = bulan === 'Semua' || p.tanggal.includes(bulan);
-      const matchTahun = tahun === 'Semua' || p.tanggal.includes(tahun);
-      return matchSearch && matchKategori && matchStatus && matchBulan && matchTahun;
+    // ===== Event Listeners =====
+    document.getElementById('btnTambahPengeluaran').addEventListener('click', () => {
+      new bootstrap.Modal('#tambahModal').show();
     });
 
-    renderList(filtered);
-  }
+    // Filter events
+    document.getElementById('searchInput').addEventListener('input', applyFilters);
+    ['filterKategori', 'filterBulan', 'filterTahun', 'filterStatus'].forEach(id => {
+      document.getElementById(id).addEventListener('change', applyFilters);
+    });
 
-  document.querySelectorAll('#searchInput, #filterKategori, #filterBulan, #filterTahun, #filterStatus')
-    .forEach(el => el.addEventListener('input', applyFilters));
-
-  renderList(pengajuanData);
-</script>
-
-<script>
-  // === Sidebar mobile fix ===
-  const sidebar = document.querySelector('.sidebar');
-  const overlay = document.getElementById('overlay');
-  const menuToggle = document.getElementById('menuToggle');
-
-  menuToggle.addEventListener('click', (e) => {
-    e.stopPropagation();
-    sidebar.classList.toggle('active');
-    overlay.classList.toggle('show');
-  });
-
-  // Tutup sidebar jika klik di luar area sidebar
-  document.addEventListener('click', (e) => {
-    const isClickInsideSidebar = sidebar.contains(e.target) || menuToggle.contains(e.target);
-    if (!isClickInsideSidebar) {
+    // Sidebar mobile
+    menuToggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      sidebar.classList.toggle('active');
+      overlay.classList.toggle('show');
+    });
+    overlay.addEventListener('click', () => {
       sidebar.classList.remove('active');
       overlay.classList.remove('show');
-    }
-  });
-</script>
+    });
+
+    // Init
+    loadPengajuan();
+  </script>

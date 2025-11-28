@@ -243,85 +243,115 @@
 
   <script src="./assets/bootstrap-5.3.8-dist/js/bootstrap.bundle.min.js"></script>
   <script>
-    const dataPersetujuan = [
-      {judul: "Pembuatan Saluran Air", pengaju: "Pak Joko", deskripsi: "Perbaikan saluran air di Blok A agar tidak tergenang saat hujan.", tanggal: "12 Mei 2025", status: "Menunggu Persetujuan"},
-      {judul: "Pembelian Kursi Pos Ronda", pengaju: "Bu Nani", deskripsi: "Pengadaan kursi baru untuk pos ronda RT 03.", tanggal: "22 Juni 2025", status: "Disetujui"},
-      {judul: "Pengecatan Gapura", pengaju: "Pak Rudi", deskripsi: "Mengecat ulang gapura depan perumahan yang sudah pudar.", tanggal: "2 Juli 2025", status: "Menunggu Persetujuan"},
-      {judul: "Pemasangan CCTV", pengaju: "Bu Tini", deskripsi: "Pemasangan CCTV di area parkir umum untuk keamanan lingkungan.", tanggal: "8 Agustus 2025", status: "Ditolak"},
-      {judul: "Perbaikan Jalan Gang", pengaju: "Pak Bambang", deskripsi: "Menambal jalan gang utama yang rusak akibat hujan deras.", tanggal: "5 September 2025", status: "Menunggu Persetujuan"},
-    ];
+let dataPengeluaran = [];
 
-    const listContainer = document.getElementById("persetujuanList");
-    const modal = new bootstrap.Modal(document.getElementById("confirmModal"));
-    const modalTitle = document.getElementById("modalTitle");
-    const modalMessage = document.getElementById("modalMessage");
-    const confirmYes = document.getElementById("confirmYes");
+const listContainer = document.getElementById("persetujuanList");
+const modal = new bootstrap.Modal(document.getElementById("confirmModal"));
+const modalTitle = document.getElementById("modalTitle");
+const modalMessage = document.getElementById("modalMessage");
+const confirmYes = document.getElementById("confirmYes");
 
-    function renderList() {
-      listContainer.innerHTML = "";
-      dataPersetujuan.forEach((item, index) => {
-        let badgeClass =
-          item.status === "Disetujui" ? "status-disetujui" :
-          item.status === "Ditolak" ? "status-ditolak" :
-          "status-menunggu";
+async function loadData() {
+    try {
+        const response = await fetch('aksi/get_blm_setuju.php');
+        dataPengeluaran = await response.json();
+        renderList();
+    } catch (err) {
+        listContainer.innerHTML = `<p class="text-danger text-center">Gagal memuat data pengajuan.</p>`;
+    }
+}
+
+function renderList() {
+    listContainer.innerHTML = "";
+    if (dataPengeluaran.length === 0) {
+        listContainer.innerHTML = `<p class="text-center text-muted">Belum ada pengajuan dana.</p>`;
+        return;
+    }
+
+    dataPengeluaran.forEach(item => {
+        let badgeClass = 
+            item.status === "Disetujui" ? "status-disetujui" :
+            item.status === "Ditolak" ? "status-ditolak" :
+            "status-menunggu";
 
         const card = `
-          <div class="card-persetujuan fade-in" id="card-${index}">
-            <div class="card-header">
-              <div>
-                <h6 class="fw-bold mb-1">${item.judul}</h6>
-                <p class="text-muted small mb-1">Diajukan oleh: ${item.pengaju}</p>
-                <small class="text-secondary"><i class="fa-regular fa-calendar me-1"></i>${item.tanggal}</small>
-              </div>
-              <span class="status-badge ${badgeClass}">${item.status}</span>
+            <div class="card-persetujuan fade-in">
+                <div class="card-header">
+                    <div>
+                        <h6 class="fw-bold mb-1">${item.judul}</h6>
+                        <p class="text-muted small mb-1">Diajukan oleh: Bendahara RT</p>
+                        <small class="text-secondary">
+                            <i class="fa-regular fa-calendar me-1"></i>${item.tanggal}
+                        </small>
+                    </div>
+                    <span class="status-badge ${badgeClass}">${item.status}</span>
+                </div>
+                <div class="card-body mt-2">
+                    <p>${item.deskripsi || 'Tidak ada keterangan'}</p>
+                    
+                    ${item.status === "Menunggu Persetujuan" ? `
+                    <div class="text-end mt-3">
+                        <button class="btn btn-success btn-sm me-2" onclick="konfirmasi(${item.id}, 'setujui')">
+                            Setujui
+                        </button>
+                        <button class="btn btn-danger btn-sm" onclick="konfirmasi(${item.id}, 'tolak')">
+                            Tolak
+                        </button>
+                    </div>` : ""}
+                </div>
             </div>
-            <div class="card-body mt-2">
-              <p>${item.deskripsi}</p>
-              ${item.status === "Menunggu Persetujuan" ? `
-              <div class="text-end mt-3">
-                <button class="btn btn-success btn-sm me-2" onclick="showModal(${index}, true)">Setujui</button>
-                <button class="btn btn-danger btn-sm" onclick="showModal(${index}, false)">Tolak</button>
-              </div>` : ""}
-            </div>
-          </div>
         `;
         listContainer.innerHTML += card;
-      });
-    }
-
-    function showModal(index, approve) {
-      modalTitle.textContent = approve ? "Konfirmasi Persetujuan" : "Konfirmasi Penolakan";
-      modalMessage.textContent = approve
-        ? `Apakah Anda yakin ingin menyetujui pengajuan "${dataPersetujuan[index].judul}"?`
-        : `Apakah Anda yakin ingin menolak pengajuan "${dataPersetujuan[index].judul}"?`;
-
-      confirmYes.onclick = () => {
-        dataPersetujuan[index].status = approve ? "Disetujui" : "Ditolak";
-        renderList();
-        modal.hide();
-      };
-      modal.show();
-    }
-
-    renderList();
-
-    const sidebar = document.getElementById('sidebar');
-    const overlay = document.getElementById('overlay');
-    const menuToggle = document.getElementById('menuToggle');
-
-    menuToggle.addEventListener('click', () => {
-      sidebar.classList.toggle('show');
-      overlay.classList.toggle('active');
     });
-    overlay.addEventListener('click', () => {
-      sidebar.classList.remove('show');
-      overlay.classList.remove('active');
-    });
+}
 
-    function logout() {
-      alert("Logout berhasil!");
-      location.href = "index.html";
-    }
-  </script>
+function konfirmasi(id, aksi) {
+    const item = dataPengeluaran.find(x => x.id == id);
+    const isSetujui = aksi === 'setujui';
+    
+    modalTitle.textContent = isSetujui ? "Konfirmasi Persetujuan" : "Konfirmasi Penolakan";
+    modalMessage.innerHTML = isSetujui
+        ? `Apakah Anda yakin ingin <strong>menyetujui</strong> pengajuan:<br><strong>"${item.judul}"</strong>?`
+        : `Apakah Anda yakin ingin <strong>menolak</strong> pengajuan:<br><strong>"${item.judul}"</strong>?`;
+
+    confirmYes.onclick = async () => {
+        const formData = new FormData();
+        formData.append('id', id);
+        formData.append('aksi', aksi);
+
+        try {
+            const res = await fetch('aksi/edit_status_pengeluaran.php', {
+                method: 'POST',
+                body: formData
+            });
+            const result = await res.json();
+
+            if (result.success) {
+                loadData(); // refresh data
+                modal.hide();
+            } else {
+                alert("Gagal memperbarui status!");
+            }
+        } catch (err) {
+            alert("Terjadi kesalahan jaringan!");
+        }
+    };
+
+    modal.show();
+}
+
+// Load pertama kali
+loadData();
+
+// Sidebar toggle (tetap sama)
+document.getElementById('menuToggle')?.addEventListener('click', () => {
+    document.getElementById('sidebar').classList.toggle('show');
+    document.getElementById('overlay').classList.toggle('active');
+});
+document.getElementById('overlay').addEventListener('click', () => {
+    document.getElementById('sidebar').classList.remove('show');
+    document.getElementById('overlay').classList.remove('active');
+});
+</script>
 </body>
 </html>
