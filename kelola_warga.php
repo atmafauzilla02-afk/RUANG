@@ -1,67 +1,12 @@
 <?php
 session_start();
 if (!isset($_SESSION['id_pengguna'])) {
-    header("Location: login.php");
-    exit();
-}
-include 'koneksi/koneksi.php';
+    echo "<script>
+        alert('Anda harus login terlebih dahulu!');
+        window.location.href = './login.php';
 
-// === PENCARIAN ===
-$searchNama = trim($_GET['searchNama'] ?? '');
-$searchNIK  = trim($_GET['searchNIK'] ?? '');
-
-// === QUERY UTAMA (hanya warga aktif) ===
-$sql = "SELECT id_pengguna, nama, nik, alamat, no_telp 
-        FROM pengguna 
-        WHERE role = 'warga'";
-
-$params = [];
-$types  = "";
-
-if ($searchNama !== '') {
-    $sql     .= " AND nama LIKE ?";
-    $params[] = "%$searchNama%";
-    $types   .= "s";
-}
-if ($searchNIK !== '') {
-    $sql     .= " AND nik LIKE ?";
-    $params[] = "%$searchNIK%";
-    $types   .= "s";
-}
-
-$sql .= " ORDER BY nama ASC";
-
-$stmt = mysqli_prepare($koneksi, $sql);
-if ($stmt === false) {
-    die("Query error: " . mysqli_error($koneksi));
-}
-if ($params) {
-    mysqli_stmt_bind_param($stmt, $types, ...$params);
-}
-mysqli_stmt_execute($stmt);
-$result = mysqli_stmt_get_result($stmt);
-
-// === EDIT MODE ===
-$editId = 0;
-$editNama = $editNIK = $editAlamat = $editTelp = "";
-
-if (isset($_GET['edit'])) {
-    $editId = (int)$_GET['edit'];
-    $stmt = mysqli_prepare($koneksi, "SELECT nama, nik, alamat, no_telp FROM pengguna WHERE id_pengguna = ? AND role = 'warga'");
-    mysqli_stmt_bind_param($stmt, "i", $editId);
-    mysqli_stmt_execute($stmt);
-    $res = mysqli_stmt_get_result($stmt);
-    
-    if ($row = mysqli_fetch_assoc($res)) {
-        $editNama   = htmlspecialchars($row['nama']);
-        $editNIK    = htmlspecialchars($row['nik']);
-        $editAlamat = htmlspecialchars($row['alamat']);
-        $editTelp   = htmlspecialchars($row['no_telp']);
-    } else {
-        // ID tidak valid
-        header("Location: kelola_warga.php");
-        exit();
-    }
+    </script>";
+    exit;
 }
 ?>
 
@@ -378,90 +323,113 @@ if (isset($_GET['edit'])) {
             </tr>
           </thead>
           <tbody id="wargaList">
-            <?php while ($warga = mysqli_fetch_assoc($result)): ?>
-              <tr>
-                  <td><?= htmlspecialchars($warga['nama']) ?></td>
-                  <td><?= htmlspecialchars($warga['nik']) ?></td>
-                  <td><?= htmlspecialchars($warga['alamat']) ?></td>
-                  <td><?= htmlspecialchars($warga['no_telp']) ?></td>
-                  <td class="text-center">
-                      <a href="kelola_warga.php?edit=<?= $warga['id_pengguna'] ?>" 
-                        class="btn btn-warning btn-sm">
-                        <i class="fa-solid fa-pen"></i>
-                      </a>
-                      <form action="aksi/hapus_kelola_warga.php" method="POST" style="display:inline;"
-                            onsubmit="return confirm('Apakah anda yakin ingin menghapus <?= htmlspecialchars($warga['nama']) ?>?');">
-                          <input type="hidden" name="id" value="<?= $warga['id_pengguna'] ?>">
-                          <button type="submit" class="btn btn-danger btn-sm">
-                              <i class="fa-solid fa-trash"></i>
-                          </button>
-                      </form>
-                  </td>
-              </tr>
-            <?php endwhile; ?>
+             <?php 
+                   include 'koneksi/koneksi.php';
+                    $query = mysqli_query($koneksi, "SELECT w.id_warga, p.nama, p.nik, p.alamat, p.no_telp FROM warga w JOIN pengguna p ON w.id_pengguna = p.id_pengguna"); 
+                    while ($data = mysqli_fetch_assoc($query)) { 
+                    ?> 
+                        <tr> 
+                            <td><?php echo $data['nama']; ?></td> 
+                            <td><?php echo $data['nik']; ?></td> 
+                            <td><?php echo $data['alamat']; ?></td> 
+                            <td><?php echo $data['no_telp']; ?></td> 
+                            <td>
+                                <a href="kelola_warga.php?edit=<?= $data['id_warga']; ?>" class="btn btn-warning btn-sm">
+                                <i class="fa-solid fa-pen"></i>
+                                </a>
+                                <form action="aksi/hapus_kelola_warga.php" method="POST" style="display:inline;" onsubmit="return confirm('Yakin hapus data ini?');">
+                                  <input type="hidden" name="id" value="<?= $data['id_warga']; ?>">
+                                  <button type="submit" class="btn btn-danger btn-sm"><i class="fa-solid fa-trash"></i></button>
+                                </form>
+
+                            </td>
+                        </tr> 
+              <?php } ?>
+                      
           </tbody>
         </table>
       </div>
     </div>
   </main>
 
-  <!-- MODAL TAMBAH / EDIT WARGA (HANYA SATU!) -->
-<div class="modal fade" id="modalWarga" tabindex="-1">
+  <?php
+$editId = 0;
+$editNama = $editNIK = $editAlamat = $editTelp = "";
+
+if(isset($_GET['edit'])){
+    $editId = $_GET['edit'];
+    $queryEdit = mysqli_query($koneksi, "SELECT p.nama, p.nik, p.alamat, p.no_telp FROM warga w JOIN pengguna p ON w.id_pengguna = p.id_pengguna WHERE w.id_warga='$editId'");
+    $row = mysqli_fetch_assoc($queryEdit);
+    $editNama = $row['nama'];
+    $editNIK = $row['nik'];
+    $editAlamat = $row['alamat'];
+    $editTelp = $row['no_telp'];
+}
+?>
+
+  <!-- MODAL EDIT WARGA -->
+  <div class="modal fade <?= $editId ? 'show' : '' ?>" id="modalWarga" tabindex="-1" <?= $editId ? 'style="display:block;"' : '' ?> aria-hidden="true">
     <div class="modal-dialog">
-        <div class="modal-content rounded-4 shadow-lg">
-            <div class="modal-header bg-warning border-0">
-                <h5 class="modal-title fw-bold" id="modalTitle">
-                    <?= isset($_GET['edit']) ? 'Edit Warga' : 'Tambah Warga' ?>
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <form action="<?= isset($_GET['edit']) ? 'aksi/edit_kelola_warga.php' : 'aksi/tambah_kelola_warga.php' ?>" method="POST" id="formWarga">
-                    <?php if (isset($_GET['edit'])): ?>
-                        <input type="hidden" name="id_pengguna" value="<?= $editId ?>">
-                    <?php endif; ?>
-
-                    <div class="mb-3">
-                        <label class="form-label">Nama</label>
-                        <input type="text" name="nama" class="form-control" required 
-                               value="<?= isset($_GET['edit']) ? $editNama : '' ?>">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">NIK</label>
-                        <input type="text" name="nik" class="form-control" required maxlength="16"
-                               value="<?= isset($_GET['edit']) ? $editNIK : '' ?>">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Alamat</label>
-                        <input type="text" name="alamat" class="form-control" required
-                               value="<?= isset($_GET['edit']) ? $editAlamat : '' ?>">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">No Telepon</label>
-                        <input type="text" name="no_telp" class="form-control" required 
-                               pattern="[0-9]{10,15}" title="Hanya angka, 10-15 digit"
-                               value="<?= isset($_GET['edit']) ? $editTelp : '' ?>">
-                        <small class="text-muted">Contoh: 081234567890</small>
-                    </div>
-
-                    <button type="submit" class="btn btn-success w-100 fw-semibold">
-                        <?= isset($_GET['edit']) ? 'Update Data' : 'Simpan Warga' ?>
-                    </button>
-                </form>
-            </div>
+      <div class="modal-content rounded-4 shadow-lg">
+        <div class="modal-header bg-warning border-0">
+          <h5 class="modal-title fw-bold" id="modalTitle"><?= $editId ? 'Edit Warga' : 'Tambah Warga' ?></h5>
+          <a href="kelola_warga.php" class="btn-close"></a>
         </div>
-    </div>
-</div>
+        <div class="modal-body">
+          <form action="<?= $editId ? 'aksi/edit_kelola_warga.php' : 'aksi/tambah_kelola_warga.php' ?>" method="POST">
+            <input type="hidden" name="id_warga" value="<?= $editId ?>">
 
-<!-- AUTO SHOW MODAL HANYA JIKA EDIT -->
-<?php if (isset($_GET['edit']) && $editId > 0): ?>
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        var modal = new bootstrap.Modal(document.getElementById('modalWarga'));
-        modal.show();
-    });
-</script>
-<?php endif; ?>
+            <label for="nama_warga" class="form-label">Nama</label>
+            <input type="text" name="nama_warga" class="form-control mb-2" required value="<?= $editNama ?>">
+
+            <label for="nik" class="form-label">NIK</label>
+            <input type="text" name="nik" class="form-control mb-2" required value="<?= $editNIK ?>">
+
+            <label for="alamat" class="form-label">Alamat</label>
+            <input type="text" name="alamat" class="form-control mb-2" required value="<?= $editAlamat ?>">
+
+            <label for="no_telp" class="form-label">No Telepon</label>
+            <input type="text" name="no_telp" class="form-control mb-3" required value="<?= $editTelp ?>">
+
+            <button type="submit" class="btn btn-success w-100 fw-semibold">
+                <?= $editId ? "Update" : "Simpan" ?>
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL TAMBAH WARGA-->
+  <div class="modal fade" id="modalWarga" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content rounded-4 shadow-lg">
+        <div class="modal-header bg-warning border-0">
+          <h5 class="modal-title fw-bold" id="modalTitle">Tambah Warga</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form action="aksi/tambah_kelola_warga.php" method="POST" id="wargaForm">
+            <input type="hidden" id="wargaIndex" />
+
+            <label for="nama_warga" class="form-label">Nama</label>
+            <input type="text" id="nama_warga" name="nama_warga" class="form-control mb-2" required />
+
+            <label for="nik" class="form-label">NIK</label>
+            <input type="text" id="nik" name="nik" class="form-control mb-2" required />
+
+            <label for="alamat" class="form-label">Alamat</label>
+            <input type="text" id="alamat" name="alamat" class="form-control mb-2" required />
+
+            <label for="no_telp" class="form-label">No Telepon</label>
+            <input type="text" id="no_telp" name="no_telp" class="form-control mb-3" required />
+
+            <button type="submit" class="btn btn-success w-100 fw-semibold">Simpan</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <script src="./assets/bootstrap-5.3.8-dist/js/bootstrap.bundle.min.js"></script>
   <script>
@@ -524,3 +492,5 @@ document.getElementById('btnTambahWarga')?.addEventListener('click', function() 
 
 </body>
 </html>
+
+
