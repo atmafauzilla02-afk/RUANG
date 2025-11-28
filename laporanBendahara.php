@@ -1,3 +1,11 @@
+<?php
+session_start();
+if (!isset($_SESSION['id_pengguna'])) {
+    echo "<script>alert('Login dulu!'); window.location='index.php';</script>";
+    exit;
+}
+?>
+
 <!DOCTYPE html>
 <html lang="id">
 
@@ -312,42 +320,57 @@
 
   <!-- SCRIPT -->
   <script>
-    const bulanNama = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+  const bulanNama = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
 
-    // Isi dropdown bulan
-    document.addEventListener('DOMContentLoaded', () => {
-      const filterBulan = document.getElementById('filterBulan');
-      filterBulan.innerHTML = '<option value="">Semua Bulan</option>';
-      bulanNama.forEach(b => filterBulan.add(new Option(b, b)));
-    });
+  document.addEventListener('DOMContentLoaded', () => {
+    const filterBulan = document.getElementById('filterBulan');
+    filterBulan.innerHTML = '<option value="">Semua Bulan</option>';
+    bulanNama.forEach(b => filterBulan.add(new Option(b, b)));
+  });
 
-    // FUNGSI UTAMA – HANYA ADA SATU!
-    async function renderLaporan() {
-      const tahun = document.getElementById('filterTahun').value;
-      const bulan = document.getElementById('filterBulan').value;
+  async function renderLaporan() {
+    const tahun = document.getElementById('filterTahun').value;
+    const bulan = document.getElementById('filterBulan').value;
 
-      const params = new URLSearchParams();
-      if (tahun) params.append('tahun', tahun);
-      if (bulan) params.append('bulan', bulan);
+    const params = new URLSearchParams();
+    if (tahun) params.append('tahun', tahun);
+    if (bulan) params.append('bulan', bulan);
 
+    const container = document.getElementById('daftarLaporan');
+    
+    try {
+      const response = await fetch(`./aksi/get_laporan.php?${params}`, {
+        credentials: 'same-origin'
+      });
+
+      const text = await response.text();
+      let data;
       try {
-        const res = await fetch(`./aksi/get_laporan.php?${params}`);
-        const data = await res.json();
+        data = JSON.parse(text);
+      } catch (e) {
+        console.error("Response bukan JSON:", text);
+        container.innerHTML = `<p class="text-danger">Error server: bukan JSON. Lihat console!</p>`;
+        return;
+      }
 
-        const container = document.getElementById('daftarLaporan');
-        container.innerHTML = '';
+      container.innerHTML = '';
 
-        if (data.length === 0) {
-          container.innerHTML = '<p class="text-center text-muted">Tidak ada laporan ditemukan.</p>';
-          return;
-        }
+      if (!Array.isArray(data)) {
+        container.innerHTML = `<p class="text-danger">${data.error || 'Data tidak valid'}</p>`;
+        return;
+      }
 
-        data.forEach(item => {
-          container.innerHTML += `
+      if (data.length === 0) {
+        container.innerHTML = '<p class="text-center text-muted">Tidak ada laporan ditemukan.</p>';
+        return;
+      }
+
+      data.forEach(item => {
+        container.innerHTML += `
           <div class="list-group-item d-flex justify-content-between align-items-center mb-2">
             <div>
-              <strong>${item.bulan_tahun}</strong><br>
-              <small class="text-muted">${item.file}</small>
+              <strong>${item.bulan_tahun || 'Tanpa Judul'}</strong><br>
+              <small class="text-muted">${item.file || '-'}</small>
             </div>
             <div class="d-flex gap-2">
               <button class="btn btn-warning btn-sm fw-semibold" onclick="lihatLaporan('${item.path}', '${item.bulan_tahun}')">
@@ -358,62 +381,63 @@
               </button>
             </div>
           </div>`;
-        });
-      } catch (err) {
-        console.error(err);
-        document.getElementById('daftarLaporan').innerHTML = '<p class="text-danger">Gagal memuat data. Cek console (F12).</p>';
+      });
+
+    } catch (err) {
+      console.error("Fetch error:", err);
+      container.innerHTML = '<p class="text-danger">Gagal memuat data. Pastikan file <code>aksi/get_laporan.php</code> sudah ada dan benar.</p>';
+    }
+  }
+
+  function lihatLaporan(path, judul) {
+    document.getElementById('pdfViewer').src = path + "?v=" + Date.now();
+    document.getElementById('pdfTitle').innerText = `Laporan ${judul}`;
+    new bootstrap.Modal(document.getElementById('lihatModal')).show();
+  }
+
+  function editLaporan(bulanTahun) {
+    document.getElementById('bulanInput').value = bulanTahun || '';
+    new bootstrap.Modal(document.getElementById('uploadModal')).show();
+  }
+
+  // Upload
+  document.getElementById('unggahBtn').addEventListener('click', async () => {
+    const fileInput = document.getElementById('fileInput');
+    const bulanInput = document.getElementById('bulanInput').value.trim();
+
+    if (!fileInput.files[0]) return alert('Pilih file PDF dulu!');
+    if (!bulanInput) return alert('Isi nama bulan & tahun! Contoh: Oktober 2025');
+
+    const formData = new FormData();
+    formData.append('file', fileInput.files[0]);
+    formData.append('bulan', bulanInput);
+
+    try {
+      const res = await fetch('./aksi/upload_laporan.php', {
+        method: 'POST',
+        body: formData
+      });
+      const json = await res.json();
+      alert(json.message || 'Sukses!');
+      if (json.success) {
+        bootstrap.Modal.getInstance(document.getElementById('uploadModal')).hide();
+        fileInput.value = '';
+        document.getElementById('bulanInput').value = '';
+        renderLaporan();
       }
+    } catch (err) {
+      console.error(err);
+      alert('Upload gagal! Pastikan upload_laporan.php ada.');
     }
+  });
 
-    function lihatLaporan(path, judul) {
-      document.getElementById('pdfViewer').src = path + "?v=" + Date.now();
-      document.getElementById('pdfTitle').innerText = `Laporan ${judul}`;
-      new bootstrap.Modal(document.getElementById('lihatModal')).show();
-    }
+  // Filter change
+  document.getElementById('filterTahun').addEventListener('change', renderLaporan);
+  document.getElementById('filterBulan').addEventListener('change', renderLaporan);
 
-    function editLaporan(bulanTahun) {
-      document.getElementById('bulanInput').value = bulanTahun;
-      new bootstrap.Modal(document.getElementById('uploadModal')).show();
-    }
-
-    // Upload / Update
-    document.getElementById('unggahBtn').addEventListener('click', async () => {
-      const fileInput = document.getElementById('fileInput');
-      const bulanInput = document.getElementById('bulanInput').value.trim();
-
-      if (!fileInput.files[0]) return alert('Pilih file PDF dulu!');
-      if (!bulanInput) return alert('Isi bulan & tahun! Contoh: Januari 2025');
-
-      const formData = new FormData();
-      formData.append('file', fileInput.files[0]);
-      formData.append('bulan', bulanInput);
-
-      try {
-        const res = await fetch('./aksi/upload_laporan.php', {
-          method: 'POST',
-          body: formData
-        });
-        const json = await res.json();
-        alert(json.message);
-        if (json.success) {
-          bootstrap.Modal.getInstance(document.getElementById('uploadModal')).hide();
-          fileInput.value = '';
-          document.getElementById('bulanInput').value = '';
-          renderLaporan();
-        }
-      } catch (err) {
-        console.error(err);
-        alert('Upload gagal!');
-      }
-    });
-
-    // Event listener filter
-    document.getElementById('filterTahun').addEventListener('change', renderLaporan);
-    document.getElementById('filterBulan').addEventListener('change', renderLaporan);
-
-    // Jalankan pertama kali
-    renderLaporan();
-  </script>
+  renderLaporan();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 
 </html>

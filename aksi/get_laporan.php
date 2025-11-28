@@ -1,36 +1,55 @@
 <?php
+ob_clean();
 header('Content-Type: application/json');
-require '../koneksi/koneksi.php';
 
-$tahun = $_GET['tahun'] ?? '';
-$bulan = $_GET['bulan'] ?? '';
+require_once '../koneksi/koneksi.php';
 
-$sql = "SELECT bulan_tahun, tahun, nama_file, path_file FROM laporan WHERE nama_file IS NOT NULL";
+if (!$koneksi) {
+    echo json_encode(['error' => 'Koneksi database gagal']);
+    exit;
+}
+
+$tahun = isset($_GET['tahun']) ? trim($_GET['tahun']) : '';
+$bulan = isset($_GET['bulan']) ? trim($_GET['bulan']) : '';
+
+$sql = "SELECT 
+            bulan_tahun, 
+            tahun,
+            nama_file AS file,
+            path_file AS path
+        FROM laporan";
+
+$where = [];
 
 if ($tahun !== '') {
-    $sql .= " AND tahun = " . (int)$tahun;
+    $where[] = "tahun = '" . mysqli_real_escape_string($koneksi, $tahun) . "'";
 }
 if ($bulan !== '') {
-    $escaped = mysqli_real_escape_string($conn, $bulan);
-    $sql .= " AND bulan_tahun LIKE '%$escaped%'";
+    $where[] = "bulan_tahun = '" . mysqli_real_escape_string($koneksi, $bulan) . "'";
 }
 
-$sql .= " ORDER BY tahun DESC, 
-         FIELD(SUBSTRING_INDEX(bulan_tahun,' ',1),
-               'Januari','Februari','Maret','April','Mei','Juni',
-               'Juli','Agustus','September','Oktober','November','Desember') DESC";
+if (!empty($where)) {
+    $sql .= " WHERE " . implode(" AND ", $where);
+}
 
-$result = mysqli_query($conn, $sql);
+$sql .= " ORDER BY tahun DESC, bulan_tahun DESC";
+
+$result = mysqli_query($koneksi, $sql);
+
+if (!$result) {
+    echo json_encode(['error' => 'Query error: ' . mysqli_error($koneksi)]);
+    exit;
+}
+
 $data = [];
-
 while ($row = mysqli_fetch_assoc($result)) {
     $data[] = [
         'bulan_tahun' => $row['bulan_tahun'],
-        'tahun'       => $row['tahun'],
-        'file'        => $row['nama_file'],
-        'path'        => $row['path_file']
+        'file'        => $row['file'],
+        'path'        => $row['path']
     ];
 }
 
 echo json_encode($data);
+exit;
 ?>
