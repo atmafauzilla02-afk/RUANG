@@ -13,7 +13,7 @@ if (!isset($_SESSION['id_pengguna'])) {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-    $nama_warga = $_POST['nama'] ?? '';
+    $nama_warga = $_POST['nama_warga'] ?? '';
     $nik        = $_POST['nik'] ?? '';
     $alamat     = $_POST['alamat'] ?? '';
     $no_telp    = $_POST['no_telp'] ?? '';

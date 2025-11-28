@@ -409,7 +409,7 @@ if(isset($_GET['edit'])){
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
-          <form action="aksi/tambah_kelola_warga.php" method="POST" id="wargaForm">
+          <form action="aksi/tambah_kelola_warga.php" method="POST" id="formWarga">
             <input type="hidden" id="wargaIndex" />
 
             <label for="nama_warga" class="form-label">Nama</label>
