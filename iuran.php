@@ -540,11 +540,11 @@ document.getElementById("notifyBtn").addEventListener("click", function () {
 
 
   // FILTER FUNCTION
-const filterKategori = document.getElementById("filterKategori");
-const filterBulan = document.getElementById("filterBulan");
-const filterTahun = document.getElementById("filterTahun");
-const filterStatus = document.getElementById("filterStatus");
-const searchInput = document.getElementById("searchInput");
+    const filterKategori = document.getElementById("filterKategori");
+    const filterBulan = document.getElementById("filterBulan");
+    const filterTahun = document.getElementById("filterTahun");
+    const filterStatus = document.getElementById("filterStatus");
+    const searchInput = document.getElementById("searchInput");
 
 function applyFilters() {
     const kategoriVal = filterKategori.value.toLowerCase();
@@ -623,11 +623,7 @@ detailModal.addEventListener('show.bs.modal', function (event) {
     }
 })
 
-
 </script>
-  
-
-
 
 </body>
 </html>
