@@ -3,15 +3,9 @@ session_start();
 header('Content-Type: application/json');
 require '../koneksi/koneksi.php';
 
-// Ganti dengan session login ketua RT nanti
-// if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'ketua') {
-//     echo json_encode(['success' => false, 'message' => 'Akses ditolak']);
-//     exit;
-// }
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $id = intval($_POST['id']);
-    $aksi = $_POST['aksi']; // "setujui" atau "tolak"
+    $aksi = $_POST['aksi'];
 
     $status = ($aksi === 'setujui') ? 'Disetujui' : 'Ditolak';
 

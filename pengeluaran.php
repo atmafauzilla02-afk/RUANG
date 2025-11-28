@@ -1,3 +1,81 @@
+<?php
+session_start();
+
+// Cek login & role warga
+if (!isset($_SESSION['id_pengguna']) || $_SESSION['role'] !== 'warga') {
+    header("Location: index.php");
+    exit;
+}
+
+// Koneksi Database
+$koneksi = mysqli_connect("localhost", "root", "", "ruang");
+if (!$koneksi) {
+    die("Koneksi gagal: " . mysqli_connect_error());
+}
+
+$bulan_eng = ['january','february','march','april','may','june','july','august','september','october','november','december'];
+$bulan_ini = $bulan_eng[date('n') - 1];
+$tahun_ini = date('Y');
+
+
+// Total Saldo Kas
+$masuk = mysqli_fetch_array(mysqli_query($koneksi, 
+    "SELECT COALESCE(SUM(nominal_pembayaran), 0) AS total 
+     FROM pembayaran 
+     WHERE status_pembayaran = 'lunas'"))[0] ?? 0;
+
+$keluar = mysqli_fetch_array(mysqli_query($koneksi, 
+    "SELECT COALESCE(SUM(nominal_pengeluaran), 0) AS total 
+     FROM pengeluaran 
+     WHERE status_persetujuan = 'Disetujui'"))[0] ?? 0;
+
+$saldo = $masuk - $keluar;
+
+// Pemasukan bulan ini
+$pemasukan_bulan_ini = mysqli_fetch_array(mysqli_query($koneksi, 
+    "SELECT COALESCE(SUM(nominal_pembayaran), 0) AS total 
+     FROM pembayaran 
+     WHERE status_pembayaran = 'lunas'
+       AND bulan_pembayaran = '$bulan_ini'
+       AND tahun_pembayaran = '$tahun_ini'"
+))[0] ?? 0;
+
+// Pengeluaran bulan ini
+$pengeluaran_bulan_ini = mysqli_fetch_array(mysqli_query($koneksi, 
+    "SELECT COALESCE(SUM(nominal_pengeluaran), 0) AS total 
+     FROM pengeluaran 
+     WHERE status_persetujuan = 'Disetujui'
+       AND MONTH(tanggal_pengeluaran) = MONTH(CURDATE())
+       AND YEAR(tanggal_pengeluaran) = YEAR(CURDATE())"
+))[0] ?? 0;
+
+$query_pengeluaran = "
+    SELECT nama_pengeluaran, keterangan_pengeluaran, nominal_pengeluaran, 
+           tanggal_pengeluaran, jenis_pengeluaran 
+    FROM pengeluaran 
+    WHERE status_persetujuan = 'Disetujui' 
+    ORDER BY tanggal_pengeluaran DESC";
+
+$result_pengeluaran = mysqli_query($koneksi, $query_pengeluaran);
+$pengeluaranData = [];
+
+while ($row = mysqli_fetch_assoc($result_pengeluaran)) {
+    // Ubah tanggal jadi format Indonesia: 16 Agustus 2025
+    $tanggal = date('d F Y', strtotime($row['tanggal_pengeluaran']));
+    $bulanIndo = ['January'=>'Januari','February'=>'Februari','March'=>'Maret','April'=>'April','May'=>'Mei','June'=>'Juni',
+                  'July'=>'Juli','August'=>'Agustus','September'=>'September','October'=>'Oktober','November'=>'November','December'=>'Desember'];
+    $tanggal = strtr($tanggal, $bulanIndo);
+
+    $pengeluaranData[] = [
+        'judul'     => $row['nama_pengeluaran'],
+        'deskripsi' => $row['keterangan_pengeluaran'] ?: '-',
+        'nominal'   => (int)$row['nominal_pengeluaran'],
+        'tanggal'   => $tanggal,
+        'kategori'  => strtolower($row['jenis_pengeluaran']) // pastikan kolom ini berisi: keamanan/kegiatan/infrastruktur
+    ];
+  }
+?>
+
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -362,25 +440,19 @@
 
   <script src="./assets/bootstrap-5.3.8-dist/js/bootstrap.bundle.min.js"></script>
   <script>
-  
-    const pengeluaranData = [
-      {judul: 'Pembelian Ornamen Kemerdekaan', deskripsi: 'Pembelian umbul-umbul, bendera dan spanduk', nominal: 850000, tanggal: '16 Agustus 2025', kategori: 'Kegiatan'},
-      {judul: 'Perbaikan Lampu', deskripsi: 'Perbaikan lampu fasilitas umum', nominal: 240000, tanggal: '20 Agustus 2025', kategori: 'Infrastruktur'},
-      {judul: 'Pos Jaga RT', deskripsi: 'Pengadaan kursi dan lampu untuk pos ronda', nominal: 430000, tanggal: '5 Juli 2025', kategori: 'Keamanan'},
-      {judul: 'Beli Cat Gapura', deskripsi: 'Pengecatan ulang gapura RW', nominal: 500000, tanggal: '2 Juni 2025', kategori: 'Kegiatan'},
-      {judul: 'Pembuatan Saluran Air', deskripsi: 'Perbaikan saluran air RT', nominal: 1250000, tanggal: '10 Mei 2025', kategori: 'Infrastruktur'},
-      {judul: 'Lampu Taman', deskripsi: 'Perawatan lampu taman RT', nominal: 200000, tanggal: '12 April 2025', kategori: 'Infrastruktur'},
-      {judul: 'Pengadaan Sapu', deskripsi: 'Kebutuhan kebersihan lingkungan', nominal: 150000, tanggal: '18 Maret 2025', kategori: 'Kegiatan'},
-      {judul: 'CCTV', deskripsi: 'Pemasangan CCTV pos ronda', nominal: 900000, tanggal: '1 Februari 2025', kategori: 'Keamanan'},
-    ];
+    
+    const pengeluaranData = <?= json_encode($pengeluaranData, JSON_UNESCAPED_UNICODE) ?>;
 
     const listContainer = document.getElementById('pengeluaranList');
 
     function getKategoriIcon(kategori) {
-      if (kategori === 'Infrastruktur') return '<i class="fa-solid fa-wrench me-2 text-primary"></i>';
-      if (kategori === 'Keamanan') return '<i class="fa-solid fa-shield-halved me-2 text-success"></i>';
-      if (kategori === 'Kegiatan') return '<i class="fa-solid fa-people-group me-2 text-warning"></i>';
-      return '';
+    const icons = {
+        'infrastruktur': 'wrench text-primary',
+        'keamanan':     'shield-halved text-success',
+        'kegiatan':     'people-group text-warning'
+    };
+    const iconClass = icons[kategori] || 'tag text-secondary';
+    return `<i class="fa-solid fa-${iconClass} me-2"></i>`;
     }
 
     function formatRupiah(num) {
@@ -405,7 +477,7 @@
               <small class="text-muted"><i class="fa-regular fa-calendar me-1"></i>${item.tanggal}</small>
             </div>
             <div>
-              <span class="kategori-badge">${item.kategori}</span>
+              <span class="kategori-badge">${item.kategori.charAt(0).toUpperCase() + item.kategori.slice(1)}</span>
             </div>
           </div>
         `;
@@ -431,8 +503,6 @@
       const searchVal = document.getElementById('searchInput').value.toLowerCase();
       const kategoriVal = document.getElementById('filterKategori').value;
       const bulanVal = document.getElementById('filterBulan').value;
-      const tahunVal = document.getElementById('filterTahun').value;
-  
 
       const filtered = pengeluaranData.filter(item => {
         const matchSearch = item.judul.toLowerCase().includes(searchVal) || item.deskripsi.toLowerCase().includes(searchVal);

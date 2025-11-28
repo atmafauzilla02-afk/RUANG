@@ -2,17 +2,14 @@
 ob_start();                                   
 header('Content-Type: application/json');
 
-// === KONEKSI DATABASE ===
 require_once '../koneksi/koneksi.php';   
 
-// Cek koneksi
 if (!$koneksi) {
     echo json_encode(['error' => 'Koneksi database gagal']);
     ob_end_flush();
     exit;
 }
 
-// === QUERY  ===
 $sql = "SELECT 
             nama_pengeluaran AS judul,
             nominal_pengeluaran AS nominal,
@@ -31,7 +28,6 @@ if (!$result) {
     exit;
 }
 
-// === AMBIL DATA ===
 $data = [];
 while ($row = mysqli_fetch_assoc($result)) {
     $data[] = [

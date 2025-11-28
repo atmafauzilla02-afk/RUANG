@@ -2,11 +2,10 @@
 header('Content-Type: application/json');
 require '../koneksi/koneksi.php';
 
-// Hanya ambil yang statusnya Menunggu atau null (untuk jaga-jaga)
 $sql = "SELECT 
             id_pengeluaran as id,
             nama_pengeluaran as judul,
-            CONCAT('Bendahara') as pengaju,  -- bisa diganti nama bendahara nanti kalau mau
+            CONCAT('Bendahara') as pengaju,
             keterangan_pengeluaran as deskripsi,
             DATE_FORMAT(tanggal_pengeluaran, '%d %M %Y') as tanggal,
             IFNULL(status_persetujuan, 'Menunggu') as status
@@ -21,7 +20,6 @@ $result = mysqli_query($koneksi, $sql);
 $data = [];
 
 while ($row = mysqli_fetch_assoc($result)) {
-    // Ubah "Menunggu" jadi "Menunggu Persetujuan" biar sesuai tampilan
     if ($row['status'] == '' || $row['status'] == null || $row['status'] == 'Menunggu') {
         $row['status'] = 'Menunggu Persetujuan';
     }

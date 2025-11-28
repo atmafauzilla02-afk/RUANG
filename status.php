@@ -8,7 +8,7 @@ if (!isset($_SESSION['id_pengguna'])) {
     exit;
 }
 
-$id_warga = $_SESSION['id_warga'];
+$id_warga = $_SESSION['id_pengguna'];
 
 // Ambil data pembayaran milik warga yang login
 $query = "SELECT 

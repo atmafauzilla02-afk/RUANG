@@ -13,7 +13,6 @@ if (!$koneksi) {
     die("Koneksi gagal: " . mysqli_connect_error());
 }
 
-// Tambahkan ini! ← INI YANG HILANG!
 $bulan_eng = ['january','february','march','april','may','june','july','august','september','october','november','december'];
 $bulan_ini = $bulan_eng[date('n') - 1];
 $tahun_ini = date('Y');
