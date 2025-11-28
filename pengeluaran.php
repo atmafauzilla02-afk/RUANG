@@ -279,7 +279,7 @@
         <span>Pemasukan Bulan Ini</span>
         <i class="fa-solid fa-arrow-trend-up icon text-success"></i>
       </div>
-      <h4 class="text-success mt-2">Rp2.957.000</h4>
+      <h4 class="text-success">Rp<?= number_format($pemasukan_bulan_ini, 0, ',', '.') ?></h4>
       <small class="text-muted">Pemasukan bulan September</small>
     </div>
   </div>
@@ -290,7 +290,7 @@
         <span>Pengeluaran Bulan Ini</span>
         <i class="fa-solid fa-arrow-trend-down icon text-danger"></i>
       </div>
-      <h4 class="text-danger mt-2">Rp4.535.000</h4>
+      <h4 class="text-danger">Rp<?= number_format($pengeluaran_bulan_ini, 0, ',', '.') ?></h4>
       <small class="text-muted">Pengeluaran bulan September</small>
     </div>
   </div>
@@ -301,7 +301,7 @@
         <span>Total Saldo</span>
         <i class="fa-solid fa-wallet icon text-warning"></i>
       </div>
-      <h4 class="mt-2">Rp30.243.600</h4>
+      <h4>Rp<?= number_format($saldo, 0, ',', '.') ?></h4>
       <small class="text-muted">Saldo akhir bulan ini</small>
     </div>
   </div>

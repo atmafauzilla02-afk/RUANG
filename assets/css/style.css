@@ -267,3 +267,10 @@ main {
   background: #999;
   margin-top: 10px;
 }
+
+.chart-card canvas {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.z-3 { z-index: 10; }
