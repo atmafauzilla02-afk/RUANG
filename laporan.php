@@ -154,7 +154,7 @@
     </ul>
     <a href="logout.php" class="btn btn-dark w-75 mx-auto mt-auto mb-4">
       <i class="fa-solid fa-right-from-bracket me-2"></i>Sign Out
-    </a>
+    </a>*
   </aside>
 
  

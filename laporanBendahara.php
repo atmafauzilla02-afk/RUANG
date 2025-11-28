@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -10,11 +11,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
   <style>
-    * { font-family: 'Poppins', sans-serif; }
+    * {
+      font-family: 'Poppins', sans-serif;
+    }
 
     body {
-      background: linear-gradient(rgba(255,255,255,0.9), rgba(253,226,119,0.7)),
-                  url('./assets/img/batik awan kuning bg.jpg');
+      background: linear-gradient(rgba(255, 255, 255, 0.9), rgba(253, 226, 119, 0.7)),
+        url('./assets/img/batik awan kuning bg.jpg');
       background-size: cover;
       background-position: center;
       min-height: 100vh;
@@ -28,15 +31,22 @@
       background: linear-gradient(180deg, #f5c83b, #caa43b);
       color: #fff;
       position: fixed;
-      top: 0; left: 0;
-      box-shadow: 2px 0 10px rgba(0,0,0,0.08);
+      top: 0;
+      left: 0;
+      box-shadow: 2px 0 10px rgba(0, 0, 0, 0.08);
       z-index: 1000;
       padding: 20px 0;
       display: flex;
       flex-direction: column;
       transition: left 0.3s ease;
     }
-    .sidebar .logo { font-weight: 700; font-size: 1.8rem; color: #fff; }
+
+    .sidebar .logo {
+      font-weight: 700;
+      font-size: 1.8rem;
+      color: #fff;
+    }
+
     .sidebar .nav-link {
       color: #fff !important;
       font-weight: 500;
@@ -47,8 +57,11 @@
       align-items: center;
       gap: 10px;
     }
+
     .sidebar .nav-link.active,
-    .sidebar .nav-link:hover { background-color: rgba(255, 255, 255, 0.25); }
+    .sidebar .nav-link:hover {
+      background-color: rgba(255, 255, 255, 0.25);
+    }
 
     .logout-btn {
       background-color: #333;
@@ -65,7 +78,10 @@
       gap: 6px;
       transition: 0.2s;
     }
-    .logout-btn:hover { background-color: #222; }
+
+    .logout-btn:hover {
+      background-color: #222;
+    }
 
     /* CONTENT */
     .content {
@@ -77,7 +93,8 @@
     /* HEADER MOBILE */
     .mobile-header {
       position: fixed;
-      top: 0; left: 0;
+      top: 0;
+      left: 0;
       width: 100%;
       background: #f5c83b;
       color: #000;
@@ -87,7 +104,10 @@
       z-index: 998;
     }
 
-    .mobile-header h5 { margin: 0; font-weight: 600; }
+    .mobile-header h5 {
+      margin: 0;
+      font-weight: 600;
+    }
 
     #menuToggle {
       border: none;
@@ -98,41 +118,73 @@
     }
 
     /* FILTER BAR */
-   .filter-row {
-  display: flex;
-  justify-content: space-between; /* biar tombol di kanan */
-  align-items: center; /* biar sejajar vertikal */
-  gap: 10px; /* jarak antar elemen */
-}
+    .filter-row {
+      display: flex;
+      justify-content: space-between;
+      /* biar tombol di kanan */
+      align-items: center;
+      /* biar sejajar vertikal */
+      gap: 10px;
+      /* jarak antar elemen */
+    }
 
-.filter-controls {
-  display: flex;
-  gap: 10px; /* jarak antar select */
-}
+    .filter-controls {
+      display: flex;
+      gap: 10px;
+      /* jarak antar select */
+    }
 
-    .btn-upload { white-space: nowrap; }
+    .btn-upload {
+      white-space: nowrap;
+    }
 
     /* RESPONSIVE */
     @media (max-width: 768px) {
-      .content { margin-left: 0; padding: 80px 20px 20px; }
-      .sidebar { left: -240px; }
-      .sidebar.show { left: 0; }
+      .content {
+        margin-left: 0;
+        padding: 80px 20px 20px;
+      }
+
+      .sidebar {
+        left: -240px;
+      }
+
+      .sidebar.show {
+        left: 0;
+      }
+
       .filter-row {
         flex-direction: row;
         justify-content: space-between;
       }
-      .text-center-title { text-align: center; width: 100%; }
-      .filter-controls { justify-content: flex-start; }
-      .btn-upload { margin-left: auto; }
+
+      .text-center-title {
+        text-align: center;
+        width: 100%;
+      }
+
+      .filter-controls {
+        justify-content: flex-start;
+      }
+
+      .btn-upload {
+        margin-left: auto;
+      }
     }
 
-    .card { border-radius: 20px; }
+    .card {
+      border-radius: 20px;
+    }
+
     .list-group-item {
       background-color: #fffbea;
       border: 1px solid #f6e58d;
       border-radius: 10px !important;
     }
-    .list-group-item:hover { background-color: #fff5cc; }
+
+    .list-group-item:hover {
+      background-color: #fff5cc;
+    }
 
     iframe {
       width: 100%;
@@ -142,29 +194,27 @@
     }
 
     .sidebar img {
-  width: 110px;         
-  display: block;
-  margin: 20px auto 50px auto;  
-}
+      width: 110px;
+      display: block;
+      margin: 20px auto 50px auto;
+    }
 
-.sidebar .nav {
-  margin-top: 0;        
-  padding-top: 0;
-}
-.sidebar hr {
-  border: 1px solid #000 ;  
-  width: 80%;             
-  margin: -40px auto 20px auto;
-        
-}
+    .sidebar .nav {
+      margin-top: 0;
+      padding-top: 0;
+    }
 
-.logoMobile {
-  width: 80px;         
-  display: block;
-}
+    .sidebar hr {
+      border: 1px solid #000;
+      width: 80%;
+      margin: -40px auto 20px auto;
 
+    }
 
-
+    .logoMobile {
+      width: 80px;
+      display: block;
+    }
   </style>
 </head>
 
@@ -172,12 +222,12 @@
   <!-- HEADER MOBILE -->
   <header class="mobile-header d-lg-none">
     <button id="menuToggle"><i class="fa-solid fa-bars"></i></button>
-    <img src="assets/img/logo final.png" class="logoMobile"  alt="logo">
+    <img src="assets/img/logo final.png" class="logoMobile" alt="logo">
   </header>
 
   <!-- SIDEBAR -->
   <aside class="sidebar" id="sidebar">
-    <img src="./assets/img/logo final.png" alt="logo" >
+    <img src="./assets/img/logo final.png" alt="logo">
     <hr>
     <ul class="nav flex-column mt-4">
       <li><a href="dashboardBendahara.php" class="nav-link"><i class="fa-solid fa-house me-2"></i>Dashboard</a></li>
@@ -199,7 +249,7 @@
     </div>
 
     <!-- FILTER BAR -->
-  
+
     <div class="filter-row mb-3">
       <div class="filter-controls">
         <select id="filterTahun" class="form-select">
@@ -261,106 +311,109 @@
   </div>
 
   <!-- SCRIPT -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <script>
-    const bulanNama = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
-    const laporan = [];
+    const bulanNama = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
 
-    for (let tahun = 2024; tahun <= 2025; tahun++) {
-      for (let i = 0; i < 12; i++) {
-        laporan.push({
-          bulan: bulanNama[i],
-          tahun: tahun,
-          file: `Laporan_${bulanNama[i]}_${tahun}.pdf`,
-          path: `./assets/laporan/Laporan_${bulanNama[i]}_${tahun}.pdf`
-        });
-      }
-    }
-
-    const filterTahun = document.getElementById('filterTahun');
-    const filterBulan = document.getElementById('filterBulan');
-    const daftarLaporan = document.getElementById('daftarLaporan');
-    const sidebar = document.getElementById('sidebar');
-    const menuToggle = document.getElementById('menuToggle');
-
-    menuToggle.addEventListener('click', () => {
-      sidebar.classList.toggle('show');
-    });
-
-    // Tutup sidebar kalau klik luar
-    document.addEventListener('click', function(e) {
-      if (!sidebar.contains(e.target) && !menuToggle.contains(e.target)) {
-        sidebar.classList.remove('show');
-      }
-    });
-
-    function isiFilterBulan() {
+    // Isi dropdown bulan
+    document.addEventListener('DOMContentLoaded', () => {
+      const filterBulan = document.getElementById('filterBulan');
       filterBulan.innerHTML = '<option value="">Semua Bulan</option>';
-      bulanNama.forEach(b => {
-        const opt = document.createElement('option');
-        opt.value = b;
-        opt.textContent = b;
-        filterBulan.appendChild(opt);
-      });
-    }
+      bulanNama.forEach(b => filterBulan.add(new Option(b, b)));
+    });
 
-    function renderLaporan() {
-      const tahun = filterTahun.value;
-      const bulan = filterBulan.value;
-      daftarLaporan.innerHTML = '';
+    // FUNGSI UTAMA – HANYA ADA SATU!
+    async function renderLaporan() {
+      const tahun = document.getElementById('filterTahun').value;
+      const bulan = document.getElementById('filterBulan').value;
 
-      const filtered = laporan.filter(l =>
-        (tahun === '' || l.tahun == tahun) &&
-        (bulan === '' || l.bulan === bulan)
-      );
+      const params = new URLSearchParams();
+      if (tahun) params.append('tahun', tahun);
+      if (bulan) params.append('bulan', bulan);
 
-      if (filtered.length === 0) {
-        daftarLaporan.innerHTML = '<p class="text-center text-muted m-0">Tidak ada laporan ditemukan.</p>';
-        return;
-      }
+      try {
+        const res = await fetch(`./aksi/get_laporan.php?${params}`);
+        const data = await res.json();
 
-      filtered.forEach(item => {
-        daftarLaporan.innerHTML += `
-          <div class="list-group-item d-flex justify-content-between align-items-center mb-2 flex-wrap">
+        const container = document.getElementById('daftarLaporan');
+        container.innerHTML = '';
+
+        if (data.length === 0) {
+          container.innerHTML = '<p class="text-center text-muted">Tidak ada laporan ditemukan.</p>';
+          return;
+        }
+
+        data.forEach(item => {
+          container.innerHTML += `
+          <div class="list-group-item d-flex justify-content-between align-items-center mb-2">
             <div>
-              <strong>${item.bulan} ${item.tahun}</strong><br>
+              <strong>${item.bulan_tahun}</strong><br>
               <small class="text-muted">${item.file}</small>
             </div>
             <div class="d-flex gap-2">
-              <button class="btn btn-warning btn-sm fw-semibold" onclick="lihatLaporan('${item.path}', '${item.bulan} ${item.tahun}')">
-                <i class="fa-solid fa-eye me-1"></i> Lihat
+              <button class="btn btn-warning btn-sm fw-semibold" onclick="lihatLaporan('${item.path}', '${item.bulan_tahun}')">
+                Lihat
               </button>
-              <button class="btn btn-outline-secondary btn-sm fw-semibold" onclick="editLaporan('${item.bulan} ${item.tahun}')">
-                <i class="fa-solid fa-pen me-1"></i> Edit
+              <button class="btn btn-outline-secondary btn-sm fw-semibold" onclick="editLaporan('${item.bulan_tahun}')">
+                Edit
               </button>
             </div>
-          </div>
-        `;
-      });
-    }
-
-    function lihatLaporan(path, judul) {
-      document.getElementById('pdfViewer').src = path;
-      document.getElementById('pdfTitle').innerText = `Laporan Bulan ${judul}`;
-      new bootstrap.Modal(document.getElementById('lihatModal')).show();
-    }
-
-    function editLaporan(judul) {
-      document.getElementById('bulanInput').value = judul;
-      new bootstrap.Modal(document.getElementById('uploadModal')).show();
-    }
-
-    function logout() {
-      if (confirm('Apakah Anda yakin ingin keluar?')) {
-        window.location.href = 'index.html';
+          </div>`;
+        });
+      } catch (err) {
+        console.error(err);
+        document.getElementById('daftarLaporan').innerHTML = '<p class="text-danger">Gagal memuat data. Cek console (F12).</p>';
       }
     }
 
-    filterTahun.addEventListener('change', renderLaporan);
-    filterBulan.addEventListener('change', renderLaporan);
+    function lihatLaporan(path, judul) {
+      document.getElementById('pdfViewer').src = path + "?v=" + Date.now();
+      document.getElementById('pdfTitle').innerText = `Laporan ${judul}`;
+      new bootstrap.Modal(document.getElementById('lihatModal')).show();
+    }
 
-    isiFilterBulan();
+    function editLaporan(bulanTahun) {
+      document.getElementById('bulanInput').value = bulanTahun;
+      new bootstrap.Modal(document.getElementById('uploadModal')).show();
+    }
+
+    // Upload / Update
+    document.getElementById('unggahBtn').addEventListener('click', async () => {
+      const fileInput = document.getElementById('fileInput');
+      const bulanInput = document.getElementById('bulanInput').value.trim();
+
+      if (!fileInput.files[0]) return alert('Pilih file PDF dulu!');
+      if (!bulanInput) return alert('Isi bulan & tahun! Contoh: Januari 2025');
+
+      const formData = new FormData();
+      formData.append('file', fileInput.files[0]);
+      formData.append('bulan', bulanInput);
+
+      try {
+        const res = await fetch('./aksi/upload_laporan.php', {
+          method: 'POST',
+          body: formData
+        });
+        const json = await res.json();
+        alert(json.message);
+        if (json.success) {
+          bootstrap.Modal.getInstance(document.getElementById('uploadModal')).hide();
+          fileInput.value = '';
+          document.getElementById('bulanInput').value = '';
+          renderLaporan();
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Upload gagal!');
+      }
+    });
+
+    // Event listener filter
+    document.getElementById('filterTahun').addEventListener('change', renderLaporan);
+    document.getElementById('filterBulan').addEventListener('change', renderLaporan);
+
+    // Jalankan pertama kali
     renderLaporan();
   </script>
 </body>
+
 </html>

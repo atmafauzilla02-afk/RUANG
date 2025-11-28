@@ -12,7 +12,7 @@ if (isset($_POST['submit'])) {
     if ($cek > 0) {
         session_start();
         $_SESSION['id_pengguna'] = $data['id_pengguna'];
-        $_SESSION['nik'] = $data['nik'];
+        $_SESSION['nik'] = $data['nik'];    
         $_SESSION['role'] = $data['role'];
         if ($data['role'] === 'warga') {
             $query_warga = mysqli_query($koneksi, "SELECT * FROM warga WHERE id_pengguna='{$data['id_pengguna']}'");
