@@ -19,7 +19,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $no_telp    = $_POST['no_telp'] ?? '';
 
     // default password
-    $default_password = password_hash('password123', PASSWORD_DEFAULT);
+    $default_password = password_hash($nik, PASSWORD_DEFAULT);
 
     // 1. INSERT KE PENGGUNA
     $sqlPengguna = mysqli_query($koneksi, 

@@ -8,7 +8,9 @@ if (!isset($_SESSION['id_pengguna'])) {
     exit;
 }
 
-$id_warga = $_SESSION['id_pengguna'];
+$id_warga = $_SESSION['id_warga'];
+$query = "SELECT ... FROM pembayaran WHERE id_warga = '$id_warga'";
+
 
 // Ambil data pembayaran milik warga yang login
 $query = "SELECT 
@@ -85,15 +87,6 @@ $tahun_result = mysqli_query($koneksi, $tahun_query);
       <div class="modal-body">
         <p class="text-center fw-bold text-primary mb-4 modal-summary"></p>
 
-        <div class="mb-3">
-          <label class="form-label fw-semibold">Jenis Iuran</label>
-          <select class="form-select" id="jenisIuran" required>
-            <option value="" disabled selected>Pilih iuran</option>
-            <option value="Iuran Kas">Iuran Kas - Rp50.000</option>
-            <option value="Iuran Keamanan">Iuran Keamanan - Rp30.000</option>
-            <option value="Iuran Kebersihan">Iuran Kebersihan - Rp20.000</option>
-          </select>
-        </div>
 
         <div class="mb-3">
           <label class="form-label fw-semibold">Metode Pembayaran</label>
@@ -111,7 +104,7 @@ $tahun_result = mysqli_query($koneksi, $tahun_query);
       </div>
       <div class="modal-footer border-0">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-        <button type="button" class="btn btn-warning" id="btnKirimPembayaran">Kirim</button>
+        <button type="submit" class="btn btn-warning" id="btnKirimPembayaran">Kirim</button>
       </div>
     </div>
   </div>
@@ -206,8 +199,9 @@ $tahun_result = mysqli_query($koneksi, $tahun_query);
                       data-jenis="<?= htmlspecialchars($row['jenis_pembayaran']) ?>"
                       data-bulan="<?= htmlspecialchars($row['bulan_pembayaran']) ?>"
                       data-tahun="<?= $row['tahun_pembayaran'] ?>"
-                      data-nominal="Rp<?= number_format($row['nominal_pembayaran'], 0, ',', '.') ?>">
-                Bayar
+                      data-nominal="Rp<?= number_format($row['nominal_pembayaran'], 0, ',', '.') ?>"
+                      data-bs-toggle="modal" data-bs-target="#modalPembayaran">
+                Bayar 
               </button>
             <?php else: ?>
               -

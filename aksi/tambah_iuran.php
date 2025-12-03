@@ -7,17 +7,23 @@ if (isset($_POST['simpan'])) {
     $id = $_POST['id_pembayaran'];
     $jenis = $_POST['jenis'];
 
-    // Upload Bukti
-    $file = $_FILES['bukti']['name'];
-    $tmp = $_FILES['bukti']['tmp_name'];
-    $folder = "../uploads/";
+    /* Upload Foto */
+$bukti_pembayaran = null;
 
-    if (!is_dir($folder)) {
-        mkdir($folder, 0777, true);
+if (isset($_FILES['bukti_pembayaran']) && $_FILES['bukti_pembayaran']['error'] == 0) {
+    $folder = "uploads";
+    $ext = pathinfo($_FILES['bukti_pembayaran']['name'], PATHINFO_EXTENSION);
+    $filename = uniqid('profile_') . '.' . $ext;
+    $fullpath = $folder . $filename;
+
+    if (move_uploaded_file($_FILES['bukti_pembayaran']['tmp_name'], $fullpath)) {
+        $bukti_pembayaran = $filename;
+    } else {
+        $bukti_pembayaran = null;
     }
-
-    $namaBaru = time() . "_" . $file;
-    move_uploaded_file($tmp, $folder . $namaBaru);
+} else {
+    $bukti_pembayaran = null;
+}
 
     $query = mysqli_query($koneksi, "
         UPDATE pembayaran 

@@ -18,14 +18,14 @@ $bulan_eng = ['january','february','march','april','may','june','july','august',
 $bulan_ini = $bulan_eng[date('n') - 1];
 $tahun_ini = date('Y');
 
-$id_warga = $_SESSION['id_pengguna'];
+$id_warga = $_SESSION['id_warga'];
 $tahun_ini = date('Y');
 $total_harus_bayar = 36;
 
 $stmt = mysqli_prepare($koneksi, 
     "SELECT COUNT(*) AS lunas 
      FROM pembayaran 
-     WHERE id_pengguna = ? 
+     WHERE id_warga = ? 
        AND tahun_pembayaran = ? 
        AND status_pembayaran = 'lunas'");
 

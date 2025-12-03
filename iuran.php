@@ -8,6 +8,7 @@ if (!isset($_SESSION['id_pengguna'])) {
     </script>";
     exit;
 }
+include 'koneksi/koneksi.php';
 ?>
 
 <!DOCTYPE html>
@@ -313,6 +314,12 @@ if (!isset($_SESSION['id_pengguna'])) {
   </div>
 </div>
 
+<!-- Tombol BUAT IURAN -->
+<button class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#modalTambahIuran">
+<i class="fa fa-plus"></i> Buat Iuran
+</button>
+
+
       <div class="table-responsive">
         <table class="table table-bordered align-middle text-center shadow-sm rounded">
         <thead>
@@ -327,302 +334,160 @@ if (!isset($_SESSION['id_pengguna'])) {
             <th>Aksi</th>
           </tr>
         </thead>
-        
-        <tbody>
-<?php 
-include 'koneksi/koneksi.php';
-$cek = mysqli_query($koneksi, "SELECT COUNT(*) AS jml FROM pembayaran WHERE status_pembayaran='belum'");
-$dataCek = mysqli_fetch_assoc($cek);
-$jumlah_belum = $dataCek['jml'];
+       <tbody>
+<?php
+$query = mysqli_query($koneksi,"
+SELECT p.*, pg.nama 
+FROM pembayaran p
+JOIN warga w ON p.id_warga = w.id_warga
+JOIN pengguna pg ON w.id_pengguna = pg.id_pengguna
+ORDER BY p.tahun_pembayaran DESC, p.bulan_pembayaran ASC
+");
 
-$query = mysqli_query($koneksi, "
-  SELECT 
-        pembayaran.*,warga.id_pengguna, pengguna.nama FROM pembayaran JOIN warga ON warga.id_warga = pembayaran.id_warga JOIN pengguna ON warga.id_pengguna = pengguna.id_pengguna ");
-
-$no = 1;
-while ($data = mysqli_fetch_assoc($query)) { 
+$no=1;
+while($data=mysqli_fetch_assoc($query)){
 ?>
 <tr>
-    <td><?= $no++; ?></td>
-    <td><?= $data['nama']; ?></td>
-   <td>
-  <?= 
-    $data['jenis_pembayaran'] == 'kas' ? 'Iuran Kas' : 
-    ucfirst($data['jenis_pembayaran']); 
-  ?>
+<td><?= $no++; ?></td>
+<td><?= $data['nama']; ?></td>
+<td><?= ucfirst($data['jenis_pembayaran']); ?></td>
+<td><?= ucfirst($data['bulan_pembayaran']); ?></td>
+<td><?= $data['tahun_pembayaran']; ?></td>
+<td>Rp<?= number_format($data['nominal_pembayaran'],0,',','.'); ?></td>
+
+<td>
+<?php
+if($data['status_pembayaran']=='lunas'){
+echo "<span class='text-success fw-bold'>Lunas</span>";
+}elseif($data['status_pembayaran']=='menunggu'){
+echo "<span class='text-warning fw-bold'>Menunggu</span>";
+}else{
+echo "<span class='text-danger fw-bold'>Belum</span>";
+}
+?>
 </td>
 
-    <td><?= ucfirst($data['bulan_pembayaran']); ?></td>
-    <td><?= $data['tahun_pembayaran']; ?></td>
-    <td>Rp<?= number_format($data['nominal_pembayaran'], 0, ',', '.'); ?></td>
+<td>
+<?php if($data['status_pembayaran']=='menunggu'){ ?>
 
-    <td>
-        <?php if ($data['status_pembayaran'] == 'lunas') { ?>
-            <span style="color:green;font-weight:600;">Lunas</span>
-        <?php } elseif ($data['status_pembayaran'] == 'belum') { ?>
-            <span style="color:red;font-weight:600;">Belum</span>
-        <?php } else { ?>
-            <span style="color:orange;font-weight:600;">Menunggu</span>
-        <?php } ?>
-    </td>
+<button class="btn btn-primary btn-sm"
+data-bs-toggle="modal"
+data-bs-target="#detailModal"
+data-nama="<?= $data['nama']; ?>"
+data-kategori="<?= $data['jenis_pembayaran']; ?>"
+data-bulan="<?= $data['bulan_pembayaran']; ?>"
+data-tahun="<?= $data['tahun_pembayaran']; ?>"
+data-nominal="<?= $data['nominal_pembayaran']; ?>"
+data-status="<?= $data['status_pembayaran']; ?>"
+data-bukti="<?= $data['bukti_pembayaran']; ?>">
+Detail
+</button>
 
-    <td>
-    <?php if ($data['status_pembayaran'] == 'menunggu') { ?>
+<a href="aksi/konfirmasi_iuran.php?id=<?= $data['id_pembayaran']; ?>" class="btn btn-success btn-sm">Konfirmasi</a>
 
-        <!-- Detail -->
-        <button 
-            class="btn btn-primary btn-sm"
-            data-bs-toggle="modal"
-            data-bs-target="#detailModal"
-            data-id="<?= $data['id_pembayaran']; ?>"
-            data-nama="<?= $data['nama']; ?>"
-            data-kategori="<?= $data['jenis_pembayaran']; ?>"
-            data-bulan="<?= $data['bulan_pembayaran']; ?>"
-            data-tahun="<?= $data['tahun_pembayaran']; ?>"
-            data-nominal="<?= $data['nominal_pembayaran']; ?>"
-            data-status="<?= $data['status_pembayaran']; ?>"
-            data-bukti="<?= $data['bukti_pembayaran']; ?>">
-            <i class="fa fa-eye"></i> Detail
-        </button>
+<a href="aksi/tolak_iuran.php?id=<?= $data['id_pembayaran']; ?>" class="btn btn-danger btn-sm">Tolak</a>
 
-        <!-- Konfirmasi -->
-        <a href="aksi/konfirmasi_iuran.php?id=<?= $data['id_pembayaran']; ?>"
-            class="btn btn-success btn-sm"
-            onclick="return confirm('Yakin ingin mengkonfirmasi pembayaran ini?')">
-            <i class="fa fa-check"></i> Konfirmasi
-        </a>
-
-        <!-- Tolak -->
-        <a href="aksi/tolak_iuran.php?id=<?= $data['id_pembayaran']; ?>"
-            class="btn btn-danger btn-sm"
-            onclick="return confirm('Yakin ingin menolak pembayaran ini?')">
-            <i class="fa fa-times"></i> Tolak
-        </a>
-
-
-    <?php } elseif ($data['status_pembayaran'] == 'belum') { ?>
-
-        <!-- TOMBOL TAMBAH -->
-        <button 
-            class="btn btn-warning btn-sm"
-            data-bs-toggle="modal"
-            data-bs-target="#tambahModal"
-            data-id="<?= $data['id_pembayaran']; ?>"
-            data-nama="<?= $data['nama']; ?>"
-            data-kategori="<?= $data['jenis_pembayaran']; ?>"
-            data-bulan="<?= $data['bulan_pembayaran']; ?>"
-            data-tahun="<?= $data['tahun_pembayaran']; ?>">
-            <i class="fa fa-plus"></i> Tambah
-        </button>
-
-    <?php } else { ?>
-
-        <!-- Jika lunas -->
-        -
-        
-    <?php } ?>
+<?php } else { echo "-"; } ?>
 </td>
-</tr>
+
 </tr>
 <?php } ?>
 </tbody>
-      </table>
-    </div>
-  </main>
-  <button class="floating-btn position-relative" id="notifyBtn">
-    <i class="fa-solid fa-bell"></i>
-    <span id="notifBadge"
-        class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-        <?= $jumlah_belum; ?>
-    </span>
-</button>
+</table>
+</div>
+</main>
 
-<!-- TOAST NOTIF -->
-<div class="toast-container position-fixed bottom-0 end-0 p-3">
-  <div id="notifToast" class="toast text-bg-warning border-0">
-    <div class="d-flex">
-      <div class="toast-body">
-        Notifikasi dikirim ke semua warga yang belum membayar!
-      </div>
-      <button class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-    </div>
-  </div>
+<!-- MODAL BUAT IURAN -->
+<div class="modal fade" id="modalTambahIuran" tabindex="-1">
+<div class="modal-dialog">
+<div class="modal-content">
+
+<form action="aksi/tambah_iuran_awal.php" method="POST">
+
+<div class="modal-header bg-warning">
+<h5 class="modal-title">Buat Iuran</h5>
+<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
 </div>
 
-  <!-- Modal Konfirmasi/Tolak -->
-  <div class="modal fade" id="confirmModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header bg-warning text-dark">
-          <h5 class="modal-title fw-bold">Konfirmasi Aksi</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-          </div>
-          <div class="modal-body text-center">
-            <p id="confirmText">Apakah Anda yakin  ingin mengkonfirmasi pembayaran ini??</p>
-            <p id="tolakText">Apakah Anda yakin  ingin menolak pembayaran ini??</p>
-            <div class="text-end">
-              <button class="btn btn-success" id="confirmYes" data-bs-dismiss="modal">Ya</button>
-              <button class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+<div class="modal-body">
 
-  <!-- Modal Tambah Pembayaran -->
-  <div class="modal fade" id="tambahModal" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <form action="aksi/tambah_iuran.php" method="POST" enctype="multipart/form-data">
-        <div class="modal-header bg-warning text-dark">
-          <h5 class="modal-title fw-bold">Tambah Pembayaran</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-
-        <div class="modal-body">
-          <input type="hidden" name="id_pembayaran" id="tambahId">
-
-          <label class="form-label">Jenis Iuran</label>
-          <select name="jenis" id="jenisIuran" class="form-select mb-2">
-            <option value="kas">Iuran Kas - Rp50.000</option>
-            <option value="keamanan">Keamanan - Rp30.000</option>
-            <option value="kebersihan">Kebersihan - Rp20.000</option>
-          </select>
-
-          <label class="form-label">Upload Bukti Pembayaran</label>
-          <input type="file" name="bukti" class="form-control mb-3" required>
-        </div>
-
-        <div class="modal-footer">
-          <button type="submit" name="simpan" class="btn btn-success">Simpan</button>
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
-
-
-<!-- Modal Detail -->
-<div class="modal fade" id="detailModal" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header bg-warning text-dark">
-        <h5 class="modal-title fw-bold">Detail Pembayaran</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <div class="mb-3">
-          <p><strong>Nama:</strong> <span id="detailNama"></span></p>
-          <p><strong>Kategori:</strong> <span id="detailKategori"></span></p>
-          <p><strong>Bulan:</strong> <span id="detailBulan"></span></p>
-          <p><strong>Tahun:</strong> <span id="detailTahun"></span></p>
-          <p><strong>Nominal:</strong> Rp<span id="detailNominal"></span></p>
-          <p><strong>Status:</strong> <span id="detailStatus"></span></p>
-        </div>
-        <div class="text-center">
-          <p class="fw-semibold mb-2">Bukti Pembayaran:</p>
-          <img id="detailBukti" src="./assets/img/bukti1.jpg" alt="Bukti Pembayaran"
-            class="img-fluid rounded shadow-sm" style="max-height: 250px;">
-          <p id="noBuktiText" class="text-muted fst-italic">Belum ada bukti pembayaran.</p>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<script src="./assets/bootstrap-5.3.8-dist/js/bootstrap.bundle.min.js"></script> 
- <script>
-  // Toast untuk bel notifikasi
-document.getElementById("notifyBtn").addEventListener("click", function () {
-    alert("Notifikasi dikirim ke semua warga yang belum membayar!");
-});
-
-
-  // FILTER FUNCTION
-    const filterKategori = document.getElementById("filterKategori");
-    const filterBulan = document.getElementById("filterBulan");
-    const filterTahun = document.getElementById("filterTahun");
-    const filterStatus = document.getElementById("filterStatus");
-    const searchInput = document.getElementById("searchInput");
-
-function applyFilters() {
-    const kategoriVal = filterKategori.value.toLowerCase();
-    const bulanVal = filterBulan.value.toLowerCase();
-    const tahunVal = filterTahun.value;
-    const statusVal = filterStatus.value.toLowerCase();
-    const searchVal = searchInput.value.toLowerCase();
-
-    const rows = document.querySelectorAll('table tbody tr');
-
-    rows.forEach(row => {
-        const nama = row.cells[1].innerText.toLowerCase();
-        const kategori = row.cells[2].innerText.toLowerCase();
-        const bulan = row.cells[3].innerText.toLowerCase();
-        const tahun = row.cells[4].innerText;
-        const status = row.cells[6].innerText.toLowerCase();
-
-        // Cek apakah row sesuai filter
-        const show = 
-            (kategoriVal === "" || kategori === kategoriVal) &&
-            (bulanVal === "" || bulan === bulanVal) &&
-            (tahunVal === "" || tahun === tahunVal) &&
-            (statusVal === "" || status === statusVal) &&
-            (searchVal === "" || nama.includes(searchVal));
-
-        row.style.display = show ? "" : "none"; // tampilkan atau sembunyikan
-    });
+<label>Warga</label>
+<select name="id_warga" class="form-control mb-2">
+<?php
+$w = mysqli_query($koneksi,"SELECT * FROM warga");
+while($x=mysqli_fetch_assoc($w)){
+echo "<option value='$x[id_warga]'>$x[id_warga]</option>";
 }
+?>
+</select>
 
-// Pasang event listener untuk semua filter
-[filterKategori, filterBulan, filterTahun, filterStatus, searchInput].forEach(el =>
-    el.addEventListener("input", applyFilters)
-);
+<label>Kategori</label>
+<select name="jenis" class="form-control mb-2">
+<option value="kas">Kas</option>
+<option value="keamanan">Keamanan</option>
+<option value="kebersihan">Kebersihan</option>
+</select>
 
- 
-  var tambahModal = document.getElementById('tambahModal')
-tambahModal.addEventListener('show.bs.modal', function (event) {
-  var button = event.relatedTarget
+<label>Bulan</label>
+<input name="bulan" class="form-control mb-2">
 
-  var id = button.getAttribute('data-id')
-  // var nama = button.getAttribute('data-nama') // opsional
+<label>Tahun</label>
+<input type="number" name="tahun" class="form-control mb-2">
 
-  var inputId = tambahModal.querySelector('#tambahId')
-  inputId.value = id
-})
+<label>Nominal</label>
+<input type="number" name="nominal" class="form-control mb-2">
 
-var detailModal = document.getElementById('detailModal')
+</div>
+
+<div class="modal-footer">
+<button type="submit" class="btn btn-success">Simpan</button>
+</div>
+
+</form>
+
+</div>
+</div>
+</div>
+
+<!-- MODAL DETAIL -->
+<div class="modal fade" id="detailModal" tabindex="-1">
+<div class="modal-dialog">
+<div class="modal-content">
+
+<div class="modal-header bg-warning">
+<h5 class="modal-title">Detail Pembayaran</h5>
+</div>
+
+<div class="modal-body">
+<p>Nama: <span id="dNama"></span></p>
+<p>Kategori: <span id="dKategori"></span></p>
+<p>Bulan: <span id="dBulan"></span></p>
+<p>Tahun: <span id="dTahun"></span></p>
+<p>Nominal: Rp<span id="dNominal"></span></p>
+<p>Status: <span id="dStatus"></span></p>
+<img id="dBukti" class="img-fluid mt-2">
+</div>
+
+</div>
+</div>
+</div>
+
+<script src="./assets/bootstrap-5.3.8-dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+var detailModal = document.getElementById('detailModal');
 detailModal.addEventListener('show.bs.modal', function (event) {
-    var button = event.relatedTarget
+var btn = event.relatedTarget;
 
-    var nama = button.getAttribute('data-nama')
-    var kategori = button.getAttribute('data-kategori')
-    var bulan = button.getAttribute('data-bulan')
-    var tahun = button.getAttribute('data-tahun')
-    var nominal = button.getAttribute('data-nominal')
-    var status = button.getAttribute('data-status')
-    var bukti = button.getAttribute('data-bukti')
+document.getElementById('dNama').innerText = btn.getAttribute('data-nama');
+document.getElementById('dKategori').innerText = btn.getAttribute('data-kategori');
+document.getElementById('dBulan').innerText = btn.getAttribute('data-bulan');
+document.getElementById('dTahun').innerText = btn.getAttribute('data-tahun');
+document.getElementById('dNominal').innerText = btn.getAttribute('data-nominal');
+document.getElementById('dStatus').innerText = btn.getAttribute('data-status');
 
-    detailModal.querySelector('#detailNama').textContent = nama
-    detailModal.querySelector('#detailKategori').textContent = kategori
-    detailModal.querySelector('#detailBulan').textContent = bulan
-    detailModal.querySelector('#detailTahun').textContent = tahun
-    detailModal.querySelector('#detailNominal').textContent = nominal
-    detailModal.querySelector('#detailStatus').textContent = status
-
-    var imgBukti = detailModal.querySelector('#detailBukti')
-    var noBuktiText = detailModal.querySelector('#noBuktiText')
-
-    if (bukti && bukti !== "") {
-        imgBukti.src = "./uploads/" + bukti
-        imgBukti.style.display = "block"
-        noBuktiText.style.display = "none"
-    } else {
-        imgBukti.style.display = "none"
-        noBuktiText.style.display = "block"
-    }
-})
-
+document.getElementById('dBukti').src = './uploads/' + btn.getAttribute('data-bukti');
+});
 </script>
 
 </body>
