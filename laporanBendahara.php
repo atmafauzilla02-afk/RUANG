@@ -269,8 +269,8 @@ if (!isset($_SESSION['id_pengguna'])) {
           <option value="">Semua Bulan</option>
         </select>
       </div>
-      <button class="btn btn-warning fw-semibold btn-upload" data-bs-toggle="modal" data-bs-target="#uploadModal">
-        <i class="fa-solid fa-upload me-1"></i> Upload Laporan
+      <button class="btn btn-success fw-semibold btn-upload" onclick="generateOtomatis()">
+        <i class="fa-solid fa-cogs me-1"></i> Generate Laporan Otomatis
       </button>
     </div>
 
@@ -320,122 +320,97 @@ if (!isset($_SESSION['id_pengguna'])) {
 
   <!-- SCRIPT -->
   <script>
-  const bulanNama = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+const bulanNama = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
+document.addEventListener('DOMContentLoaded', () => {
+  const filterBulan = document.getElementById('filterBulan');
+  filterBulan.innerHTML = '<option value="">Semua Bulan</option>';
+  bulanNama.forEach(b => filterBulan.add(new Option(b, b)));
+});
 
-  document.addEventListener('DOMContentLoaded', () => {
-    const filterBulan = document.getElementById('filterBulan');
-    filterBulan.innerHTML = '<option value="">Semua Bulan</option>';
-    bulanNama.forEach(b => filterBulan.add(new Option(b, b)));
+function generateOtomatis() {
+  const bulan = prompt("Masukkan bulan dan tahun\nContoh: Oktober 2025", "");
+  if (!bulan || !/^[A-Za-z]+ \d{4}$/.test(bulan.trim())) {
+    return alert("Format salah! Contoh: Oktober 2025");
+  }
+  const input = bulan.trim();
+
+  if (!confirm(`Generate laporan otomatis untuk "${input}"?\nPDF akan langsung tersimpan dan bisa dilihat warga.`)) return;
+
+  const formData = new FormData();
+  formData.append('bulan', input);
+
+  fetch('./aksi/generate_pdf.php', {
+    method: 'POST',
+    body: formData
+  })
+  .then(r => r.json())
+  .then(res => {
+    if (res.success) {
+      alert("Sukses! " + res.message);
+      renderLaporan();
+    } else {
+      alert("Gagal: " + (res.message || "Unknown error"));
+    }
+  })
+  .catch(err => {
+    console.error(err);
+    alert("Error server. Cek console.");
   });
+}
 
-  async function renderLaporan() {
-    const tahun = document.getElementById('filterTahun').value;
-    const bulan = document.getElementById('filterBulan').value;
+async function renderLaporan() {
+  const tahun = document.getElementById('filterTahun').value;
+  const bulan = document.getElementById('filterBulan').value;
 
-    const params = new URLSearchParams();
-    if (tahun) params.append('tahun', tahun);
-    if (bulan) params.append('bulan', bulan);
+  const params = new URLSearchParams();
+  if (tahun) params.append('tahun', tahun);
+  if (bulan) params.append('bulan', bulan);
+
+  try {
+    const res = await fetch(`./aksi/get_laporan.php?${params}`);
+    const data = await res.json();
 
     const container = document.getElementById('daftarLaporan');
-    
-    try {
-      const response = await fetch(`./aksi/get_laporan.php?${params}`, {
-        credentials: 'same-origin'
-      });
+    container.innerHTML = '';
 
-      const text = await response.text();
-      let data;
-      try {
-        data = JSON.parse(text);
-      } catch (e) {
-        console.error("Response bukan JSON:", text);
-        container.innerHTML = `<p class="text-danger">Error server: bukan JSON. Lihat console!</p>`;
-        return;
-      }
-
-      container.innerHTML = '';
-
-      if (!Array.isArray(data)) {
-        container.innerHTML = `<p class="text-danger">${data.error || 'Data tidak valid'}</p>`;
-        return;
-      }
-
-      if (data.length === 0) {
-        container.innerHTML = '<p class="text-center text-muted">Tidak ada laporan ditemukan.</p>';
-        return;
-      }
-
-      data.forEach(item => {
-        container.innerHTML += `
-          <div class="list-group-item d-flex justify-content-between align-items-center mb-2">
-            <div>
-              <strong>${item.bulan_tahun || 'Tanpa Judul'}</strong><br>
-              <small class="text-muted">${item.file || '-'}</small>
-            </div>
-            <div class="d-flex gap-2">
-              <button class="btn btn-warning btn-sm fw-semibold" onclick="lihatLaporan('${item.path}', '${item.bulan_tahun}')">
-                Lihat
-              </button>
-              <button class="btn btn-outline-secondary btn-sm fw-semibold" onclick="editLaporan('${item.bulan_tahun}')">
-                Edit
-              </button>
-            </div>
-          </div>`;
-      });
-
-    } catch (err) {
-      console.error("Fetch error:", err);
-      container.innerHTML = '<p class="text-danger">Gagal memuat data. Pastikan file <code>aksi/get_laporan.php</code> sudah ada dan benar.</p>';
+    if (!Array.isArray(data) || data.length === 0) {
+      container.innerHTML = '<p class="text-center text-muted">Belum ada laporan.</p>';
+      return;
     }
+
+    data.forEach(item => {
+      container.innerHTML += `
+        <div class="list-group-item d-flex justify-content-between align-items-center mb-2">
+          <div>
+            <strong>${item.bulan_tahun}</strong><br>
+            <small class="text-muted">Otomatis digenerate • ${item.file || 'PDF'}</small>
+          </div>
+          <div class="d-flex gap-2">
+            <button class="btn btn-warning btn-sm" onclick="lihatLaporan('${item.path}', '${item.bulan_tahun}')">
+              Lihat
+            </button>
+            <a href="${item.path}" download class="btn btn-success btn-sm">
+              <i class="fa-solid fa-download"></i>
+            </a>
+          </div>
+        </div>`;
+    });
+  } catch (err) {
+    console.error(err);
+    document.getElementById('daftarLaporan').innerHTML = '<p class="text-danger">Gagal memuat data.</p>';
   }
+}
 
-  function lihatLaporan(path, judul) {
-    document.getElementById('pdfViewer').src = path + "?v=" + Date.now();
-    document.getElementById('pdfTitle').innerText = `Laporan ${judul}`;
-    new bootstrap.Modal(document.getElementById('lihatModal')).show();
-  }
+function lihatLaporan(path, judul) {
+  document.getElementById('pdfViewer').src = path + "?v=" + Date.now();
+  document.getElementById('pdfTitle').innerText = `Laporan ${judul}`;
+  new bootstrap.Modal(document.getElementById('lihatModal')).show();
+}
 
-  function editLaporan(bulanTahun) {
-    document.getElementById('bulanInput').value = bulanTahun || '';
-    new bootstrap.Modal(document.getElementById('uploadModal')).show();
-  }
+document.getElementById('filterTahun').addEventListener('change', renderLaporan);
+document.getElementById('filterBulan').addEventListener('change', renderLaporan);
 
-  // Upload
-  document.getElementById('unggahBtn').addEventListener('click', async () => {
-    const fileInput = document.getElementById('fileInput');
-    const bulanInput = document.getElementById('bulanInput').value.trim();
-
-    if (!fileInput.files[0]) return alert('Pilih file PDF dulu!');
-    if (!bulanInput) return alert('Isi nama bulan & tahun! Contoh: Oktober 2025');
-
-    const formData = new FormData();
-    formData.append('file', fileInput.files[0]);
-    formData.append('bulan', bulanInput);
-
-    try {
-      const res = await fetch('./aksi/upload_laporan.php', {
-        method: 'POST',
-        body: formData
-      });
-      const json = await res.json();
-      alert(json.message || 'Sukses!');
-      if (json.success) {
-        bootstrap.Modal.getInstance(document.getElementById('uploadModal')).hide();
-        fileInput.value = '';
-        document.getElementById('bulanInput').value = '';
-        renderLaporan();
-      }
-    } catch (err) {
-      console.error(err);
-      alert('Upload gagal! Pastikan upload_laporan.php ada.');
-    }
-  });
-
-  // Filter change
-  document.getElementById('filterTahun').addEventListener('change', renderLaporan);
-  document.getElementById('filterBulan').addEventListener('change', renderLaporan);
-
-  renderLaporan();
+renderLaporan();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>

@@ -1,61 +1,30 @@
 <?php
 session_start();
-
-// Cek login & role bendahara
 if (!isset($_SESSION['id_pengguna']) || $_SESSION['role'] !== 'bendahara') {
     header("Location: index.php");
     exit;
 }
+include 'koneksi/koneksi.php';
 
-// Koneksi Database (mysqli)
-$koneksi = mysqli_connect("localhost", "root", "", "ruang"); // sesuaikan nama DB
-if (!$koneksi) {
-    die("Koneksi gagal: " . mysqli_connect_error());
-}
+$tahun_filter = date('Y');
 
-// Total Saldo Kas
-$masuk = mysqli_fetch_array(mysqli_query($koneksi, 
-    "SELECT COALESCE(SUM(nominal_pembayaran), 0) AS total 
-     FROM pembayaran 
-     WHERE status_pembayaran = 'lunas'"))[0];
+$pemasukan_total = mysqli_fetch_array(mysqli_query($koneksi, 
+    "SELECT COALESCE(SUM(nominal_pembayaran),0) FROM pembayaran WHERE status_pembayaran='lunas'"
+))[0] ?? 0;
 
-$keluar = mysqli_fetch_array(mysqli_query($koneksi, 
-    "SELECT COALESCE(SUM(nominal_pengeluaran), 0) AS total 
-     FROM pengeluaran 
-     WHERE status_persetujuan = 'Disetujui'"))[0];
+$pengeluaran_total = mysqli_fetch_array(mysqli_query($koneksi, 
+    "SELECT COALESCE(SUM(nominal_pengeluaran),0) FROM pengeluaran WHERE status_persetujuan='Disetujui'"
+))[0] ?? 0;
 
-$saldo = $masuk - $keluar;
+$saldo = $pemasukan_total - $pengeluaran_total;
 
-// Iuran tertunggak bulan ini
-$bulan_eng = ['january','february','march','april','may','june','july','august','september','october','november','december'];
-$bulan_ini = $bulan_eng[date('n') - 1];  // ubah angka bulan jadi nama enum
-$tahun_ini = date('Y');
+$pemasukan_tahun = mysqli_fetch_array(mysqli_query($koneksi, 
+    "SELECT COALESCE(SUM(nominal_pembayaran),0) FROM pembayaran WHERE status_pembayaran='lunas' AND tahun_pembayaran='$tahun_filter'"
+))[0] ?? 0;
 
-$tunggakan = mysqli_fetch_array(mysqli_query($koneksi, 
-    "SELECT COUNT(*) AS jumlah 
-     FROM pembayaran 
-     WHERE status_pembayaran IN ('belum','menunggu')
-       AND bulan_pembayaran = '$bulan_ini'
-       AND tahun_pembayaran = $tahun_ini"
-))[0];
-
-// Pemasukan bulan ini
-$pemasukan_bulan_ini = mysqli_fetch_array(mysqli_query($koneksi, 
-    "SELECT COALESCE(SUM(nominal_pembayaran), 0) AS total 
-     FROM pembayaran 
-     WHERE status_pembayaran = 'lunas'
-       AND bulan_pembayaran = '$bulan_ini'
-       AND tahun_pembayaran = $tahun_ini"
-))[0];
-
-// Pengeluaran bulan ini (disetujui)
-$pengeluaran_bulan_ini = mysqli_fetch_array(mysqli_query($koneksi, 
-    "SELECT COALESCE(SUM(nominal_pengeluaran), 0) AS total 
-     FROM pengeluaran 
-     WHERE status_persetujuan = 'Disetujui'
-       AND MONTH(tanggal_pengeluaran) = MONTH(CURDATE())
-       AND YEAR(tanggal_pengeluaran) = YEAR(CURDATE())"
-))[0];
+$pengeluaran_tahun = mysqli_fetch_array(mysqli_query($koneksi, 
+    "SELECT COALESCE(SUM(nominal_pengeluaran),0) FROM pengeluaran WHERE status_persetujuan='Disetujui' AND YEAR(tanggal_pengeluaran)='$tahun_filter'"
+))[0] ?? 0;
 ?>
 
 <!DOCTYPE html>
@@ -151,47 +120,73 @@ $pengeluaran_bulan_ini = mysqli_fetch_array(mysqli_query($koneksi,
         </div>
       </div>
 
+                  <!-- KARTU IURAN TERTUNGGAK (MINIMALIS) -->
       <div class="col-md-6">
         <div class="info-card">
-          <div class="d-flex justify-content-between align-items-center">
-            <span>Iuran Tertunggak</span>
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <span>Iuran Tertunggak Tahun <?= date('Y') ?></span>
             <i class="fa-solid fa-wallet icon text-warning"></i>
           </div>
-          <h4><?= $tunggakan ?> iuran</h4>
-          <small class="text-muted">Pada bulan ini</small>
-          
 
+          <!-- Filter -->
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <select id="filterBulan" class="form-select form-select-sm">
+                <option value="">Semua Bulan</option>
+                <?php
+                $bulanIndo = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+                foreach($bulanIndo as $i => $b){
+                  $val = strtolower($b);
+                  echo "<option value='$val'>$b</option>";
+                }
+                ?>
+              </select>
+            </div>
+            <div class="col-6">
+              <select id="filterJenis" class="form-select form-select-sm">
+                <option value="">Semua Jenis</option>
+                <option value="kas">Kas</option>
+                <option value="keamanan">Keamanan</option>
+                <option value="kebersihan">Kebersihan</option>
+                <option value="lainnya">Lainnya</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Hanya Jumlah Tertunggak -->
+          <div class="text-center mt-3">
+            <h3 id="jumlahTunggakan" class="fw-bold mb-0">0 iuran</h3>
+          </div>
         </div>
       </div>
 
       <div class="col-md-6">
         <div class="info-card">
           <div class="d-flex justify-content-between align-items-center">
-            <span>Pemasukan Bulan Ini</span>
+            <span>Pemasukan Tahun <?= $tahun_filter ?></span>
             <i class="fa-solid fa-arrow-trend-up icon text-success"></i>
           </div>
-          <h4 class="text-success">Rp<?= number_format($pemasukan_bulan_ini, 0, ',', '.') ?></h4>
-          <small class="text-muted">Pemasukan bulan September</small>
+          <h4 class="text-success">Rp<?= number_format($pemasukan_tahun, 0, ',', '.') ?></h4>
+          <small class="text-muted">Total pemasukan tahun ini</small>
         </div>
       </div>
 
       <div class="col-md-6">
         <div class="info-card">
           <div class="d-flex justify-content-between align-items-center">
-            <span>Pengeluaran Bulan Ini</span>
+            <span>Pengeluaran Tahun <?= $tahun_filter ?></span>
             <i class="fa-solid fa-arrow-trend-down icon text-danger"></i>
           </div>
-          <h4 class="text-danger">Rp<?= number_format($pengeluaran_bulan_ini, 0, ',', '.') ?></h4>
-          <small class="text-muted">Pengeluaran bulan September</small>
+          <h4 class="text-danger">Rp<?= number_format($pengeluaran_tahun, 0, ',', '.') ?></h4>
+          <small class="text-muted">Total pengeluaran tahun ini</small>
         </div>
       </div>
-    </div>
 
 
         <!-- GRAFIK -->
     <div class="chart-card p-4 position-relative bg-white rounded shadow-sm">
       <h5 class="fw-semibold mb-4 text-center">
-        Grafik Pemasukan & Pengeluaran Tahun <span id="chartYear" class="text-primary">2025</span>
+        Grafik Pemasukan & Pengeluaran Tahun <span id="chartYear" class="text-primary"><?= $tahun_filter ?></span>
       </h5>
 
       <!-- Tombol Navigasi Tahun -->
@@ -212,7 +207,7 @@ $pengeluaran_bulan_ini = mysqli_fetch_array(mysqli_query($koneksi,
 
 <script>
 // === Variabel Global ===
-let currentYear = new Date().getFullYear();
+let currentYear = <?= date('Y') ?>;
 const ctx = document.getElementById('chartArea').getContext('2d');
 let chart;
 
@@ -283,6 +278,45 @@ document.getElementById('nextYear').addEventListener('click', () => {
 
 // === Load pertama kali saat halaman dibuka ===
 loadChart(currentYear);
+</script>
+
+<script>
+async function loadJumlahTunggakan(bulan = '', jenis = '') {
+    try {
+        const response = await fetch(`aksi/get_tunggakan.php?tahun=<?= date('Y') ?>&bulan=${bulan}&jenis=${jenis}`);
+        const result = await response.json();
+
+        const el = document.getElementById('jumlahTunggakan');
+
+        if (result.jumlah == 0) {
+            el.textContent = 'Semua Lunas!';
+            el.className = 'fw-bold mb-0 text-success fs-4';
+        } else {
+            el.textContent = result.jumlah + ' iuran';
+            el.className = 'fw-bold mb-0 text-warning fs-4';
+        }
+    } catch (err) {
+        document.getElementById('jumlahTunggakan').textContent = 'Error';
+    }
+}
+
+// Filter change
+document.getElementById('filterBulan')?.addEventListener('change', function() {
+    const bulan = this.value;
+    const jenis = document.getElementById('filterJenis').value;
+    loadJumlahTunggakan(bulan, jenis);
+});
+
+document.getElementById('filterJenis')?.addEventListener('change', function() {
+    const jenis = this.value;
+    const bulan = document.getElementById('filterBulan').value;
+    loadJumlahTunggakan(bulan, jenis);
+});
+
+// Load saat buka halaman
+document.addEventListener('DOMContentLoaded', () => {
+    loadJumlahTunggakan();
+});
 </script>
 
 <!-- === NOTIFIKASI === -->
@@ -368,6 +402,15 @@ document.addEventListener("DOMContentLoaded", () => {
 <script src="./assets/bootstrap-5.3.8-dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/js/all.min.js"></script>
 <!-- <script src="./assets/js/main.js"></script> -->
+ <script>
+document.addEventListener('DOMContentLoaded', () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const tahun = urlParams.get('tahun') || new Date().getFullYear();
+    loadChart(tahun);
+    document.getElementById('chartYear').textContent = tahun;
+});
+</script>
+
 </main>
 </body>
 </html>

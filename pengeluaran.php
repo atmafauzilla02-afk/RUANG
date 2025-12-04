@@ -1,7 +1,7 @@
 <?php
 session_start();
 
-// Cek login & role warga
+// Cek login & role ketua
 if (!isset($_SESSION['id_pengguna']) || $_SESSION['role'] !== 'warga') {
     header("Location: index.php");
     exit;
@@ -17,7 +17,6 @@ $bulan_eng = ['january','february','march','april','may','june','july','august',
 $bulan_ini = $bulan_eng[date('n') - 1];
 $tahun_ini = date('Y');
 
-
 // Total Saldo Kas
 $masuk = mysqli_fetch_array(mysqli_query($koneksi, 
     "SELECT COALESCE(SUM(nominal_pembayaran), 0) AS total 
@@ -27,33 +26,17 @@ $masuk = mysqli_fetch_array(mysqli_query($koneksi,
 $keluar = mysqli_fetch_array(mysqli_query($koneksi, 
     "SELECT COALESCE(SUM(nominal_pengeluaran), 0) AS total 
      FROM pengeluaran 
-     WHERE status_persetujuan = 'Disetujui'"))[0] ?? 0;
+     WHERE status_persetujuan = 'Disetujui'
+       AND YEAR(tanggal_pengeluaran) = '$tahun_ini'"))['total'] ?? 0;
 
 $saldo = $masuk - $keluar;
-
-// Pemasukan bulan ini
-$pemasukan_bulan_ini = mysqli_fetch_array(mysqli_query($koneksi, 
-    "SELECT COALESCE(SUM(nominal_pembayaran), 0) AS total 
-     FROM pembayaran 
-     WHERE status_pembayaran = 'lunas'
-       AND bulan_pembayaran = '$bulan_ini'
-       AND tahun_pembayaran = '$tahun_ini'"
-))[0] ?? 0;
-
-// Pengeluaran bulan ini
-$pengeluaran_bulan_ini = mysqli_fetch_array(mysqli_query($koneksi, 
-    "SELECT COALESCE(SUM(nominal_pengeluaran), 0) AS total 
-     FROM pengeluaran 
-     WHERE status_persetujuan = 'Disetujui'
-       AND MONTH(tanggal_pengeluaran) = MONTH(CURDATE())
-       AND YEAR(tanggal_pengeluaran) = YEAR(CURDATE())"
-))[0] ?? 0;
 
 $query_pengeluaran = "
     SELECT nama_pengeluaran, keterangan_pengeluaran, nominal_pengeluaran, 
            tanggal_pengeluaran, jenis_pengeluaran 
     FROM pengeluaran 
     WHERE status_persetujuan = 'Disetujui' 
+      AND YEAR(tanggal_pengeluaran) = '$tahun_ini'
     ORDER BY tanggal_pengeluaran DESC";
 
 $result_pengeluaran = mysqli_query($koneksi, $query_pengeluaran);
@@ -73,7 +56,7 @@ while ($row = mysqli_fetch_assoc($result_pengeluaran)) {
         'tanggal'   => $tanggal,
         'kategori'  => strtolower($row['jenis_pengeluaran']) // pastikan kolom ini berisi: keamanan/kegiatan/infrastruktur
     ];
-  }
+}
 ?>
 
 <!DOCTYPE html>
@@ -97,7 +80,7 @@ while ($row = mysqli_fetch_assoc($result_pengeluaran)) {
 .sidebar {
   width: 240px;
   height: 100vh;
-  background: linear-gradient(180deg, #f4c430, #caa43b);
+  background: linear-gradient(180deg, #f5c83b, #caa43b);
   color: #fff;
   position: fixed;
   top: 0;
@@ -153,7 +136,6 @@ while ($row = mysqli_fetch_assoc($result_pengeluaran)) {
 }
 
 
-/* Overlay */
 .overlay {
   position: fixed;
   inset: 0;
@@ -186,7 +168,7 @@ while ($row = mysqli_fetch_assoc($result_pengeluaran)) {
   transition: all 0.3s ease;
 }
 
-
+/* Mobile: Sidebar tersembunyi */
 @media (max-width: 992px) {
   .main-content {
     margin-left: 0 !important; 
@@ -194,9 +176,6 @@ while ($row = mysqli_fetch_assoc($result_pengeluaran)) {
     padding: 1rem;
   }
 }
-
-   
-    
 
     .info-box {
       background: #fff;
@@ -213,34 +192,29 @@ while ($row = mysqli_fetch_assoc($result_pengeluaran)) {
     .filter-container {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;                     
+  gap: 10px;                     /* jarak antar elemen lebih rapat */
   justify-content: space-between;
   margin-bottom: 20px;
-  
 }
 
 .filter-container .form-control,
 .filter-container .form-select {
-  flex: 1;                       
-  min-width: 220px;            
-  max-width: 360px;              
+  flex: 1;                       /* bikin semua elemen sama lebar */
+  min-width: 220px;              /* batas minimum biar gak terlalu kecil */
+  max-width: 360px;              /* batas maksimum */
 }
 
   
 
-.card-pengeluaran {
-  background: #fff;
-  border-radius: 12px;
-  padding: 15px;
-  margin-bottom: 15px;
-  box-shadow: 0 2px 15px rgba(0,0,0,0.05);
-  cursor: pointer;
-  transition: transform .2s ease;
-
-}
-
-
-
+    .card-pengeluaran {
+      background: #fff;
+      border-radius: 12px;
+      padding: 15px;
+      margin-bottom: 15px;
+      box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+      cursor: pointer;
+      transition: transform .2s ease;
+    }
     .card-pengeluaran:hover { transform: translateY(-3px); }
 
     .kategori-badge {
@@ -250,8 +224,6 @@ while ($row = mysqli_fetch_assoc($result_pengeluaran)) {
       padding: 5px 10px;
       border-radius: 20px;
     }
-
-   
     .text-danger { font-weight: 600; }
 
     /* SCROLL LIST */
@@ -310,26 +282,26 @@ while ($row = mysqli_fetch_assoc($result_pengeluaran)) {
   width: 80px;         
   display: block;
 }
-
+  
   </style>
 </head>
 <body>
 
-   <!-- HEADER UNTUK MOBILE -->
-<header class="mobile-header d-lg-none">
-   <button id="menuToggle" class="btn btn-warning me-2"><i class="fa-solid fa-bars"></i></button>
-  <img src="assets/img/logo final.png" class="logoMobile"  alt="logo">
-</header>
+  <!-- MOBILE HEADER -->
+  <header class="mobile-header d-lg-none">
+    <button id="menuToggle" class="btn btn-warning me-2"><i class="fa-solid fa-bars"></i></button>
+    <img src="assets/img/logo final.png" class="logoMobile"  alt="logo">
+  </header>
 
   <!-- SIDEBAR -->
-  <aside class="sidebar" id="sidebar" >
+  <aside class="sidebar" id="sidebar">
     <img src="./assets/img/logo final.png" alt="logo" >
     <hr>
     <ul class="nav flex-column mt-4">
-      <li><a href="dashboard.php"class="nav-link"><i class="fa-solid fa-house me-2"></i>Dashboard</a></li>
-      <li><a href="status.php" class="nav-link"><i class="fa-solid fa-wallet me-2"></i>Status</a></li>
-      <li><a href="pengeluaran.php" class="nav-link active"><i class="fa-solid fa-coins me-2"></i>Pengeluaran</a></li>
-      <li><a href="laporan.php" class="nav-link"><i class="fa-solid fa-file-lines me-2"></i>Laporan</a></li>
+      <li><a href="dashboardRT.php" class="nav-link"><i class="fa-solid fa-house me-2"></i>Dashboard</a></li>
+      <li><a href="persetujuan.php" class="nav-link"><i class="fa-solid fa-file-signature me-2"></i>Persetujuan</a></li>
+      <li><a href="pengeluaranRT.php" class="nav-link active"><i class="fa-solid fa-coins me-2"></i>Pengeluaran</a></li>
+      <li><a href="laporanRT.php" class="nav-link"><i class="fa-solid fa-file-lines me-2"></i>Laporan</a></li>
     </ul>
     <a href="logout.php" class="btn btn-dark w-75 mx-auto mt-auto mb-4">
       <i class="fa-solid fa-right-from-bracket me-2"></i>Sign Out
@@ -344,47 +316,44 @@ while ($row = mysqli_fetch_assoc($result_pengeluaran)) {
   <!-- MAIN -->
   <main class="main-content">
     <div class="text-center mb-4">
-      <h2 class="fw-bold">Pemasukan dan Pengeluaran Tahun <span id="tahun">2025</span></h2>
+      <h2 class="fw-bold">Pemasukan dan Pengeluaran Tahun <?= $tahun_ini ?></h2>
     </div>
 
    <!-- Info Box (3 Kolom) -->
-
-   
-<div class="row g-3 mb-4">
-  <div class="col-lg-4 col-md-6">
-    <div class="info-card h-100">
-      <div class="d-flex justify-content-between align-items-center">
-        <span>Pemasukan Bulan Ini</span>
-        <i class="fa-solid fa-arrow-trend-up icon text-success"></i>
+  <div class="row g-3 mb-4">
+    <div class="col-lg-4 col-md-6">
+      <div class="info-card h-100">
+        <div class="d-flex justify-content-between align-items-center">
+          <span>Pemasukan Tahun Ini</span>
+          <i class="fa-solid fa-arrow-trend-up icon text-success"></i>
+        </div>
+        <h4 class="text-success">Rp<?= number_format($masuk, 0, ',', '.') ?></h4>
+        <small class="text-muted">Total iuran lunas tahun <?= $tahun_ini ?></small>
       </div>
-      <h4 class="text-success">Rp<?= number_format($pemasukan_bulan_ini, 0, ',', '.') ?></h4>
-      <small class="text-muted">Pemasukan bulan September</small>
+    </div>
+
+    <div class="col-lg-4 col-md-6">
+      <div class="info-card h-100">
+        <div class="d-flex justify-content-between align-items-center">
+          <span>Pengeluaran Tahun Ini</span>
+          <i class="fa-solid fa-arrow-trend-down icon text-danger"></i>
+        </div>
+        <h4 class="text-danger">Rp<?= number_format($keluar, 0, ',', '.') ?></h4>
+        <small class="text-muted">Total pengeluaran disetujui tahun <?= $tahun_ini ?></small>
+      </div>
+    </div>
+
+    <div class="col-lg-4 col-md-12">
+      <div class="info-card h-100">
+        <div class="d-flex justify-content-between align-items-center">
+          <span>Saldo Akhir Tahun Ini</span>
+          <i class="fa-solid fa-wallet icon text-warning"></i>
+        </div>
+        <h4>Rp<?= number_format($saldo, 0, ',', '.') ?></h4>
+        <small class="text-muted">Sisa kas per <?= date('d F Y') ?></small>
+      </div>
     </div>
   </div>
-
-  <div class="col-lg-4 col-md-6">
-    <div class="info-card h-100">
-      <div class="d-flex justify-content-between align-items-center">
-        <span>Pengeluaran Bulan Ini</span>
-        <i class="fa-solid fa-arrow-trend-down icon text-danger"></i>
-      </div>
-      <h4 class="text-danger">Rp<?= number_format($pengeluaran_bulan_ini, 0, ',', '.') ?></h4>
-      <small class="text-muted">Pengeluaran bulan September</small>
-    </div>
-  </div>
-
-  <div class="col-lg-4 col-md-12">
-    <div class="info-card h-100">
-      <div class="d-flex justify-content-between align-items-center">
-        <span>Total Saldo</span>
-        <i class="fa-solid fa-wallet icon text-warning"></i>
-      </div>
-      <h4>Rp<?= number_format($saldo, 0, ',', '.') ?></h4>
-      <small class="text-muted">Saldo akhir bulan ini</small>
-    </div>
-  </div>
-</div>
-  
 
 
     <!-- Filter -->
@@ -392,30 +361,27 @@ while ($row = mysqli_fetch_assoc($result_pengeluaran)) {
       <input type="text" class="form-control" placeholder="Cari pengeluaran..." id="searchInput" style="max-width:360px;">
       <select class="form-select" id="filterKategori" style="max-width:360px;">
         <option value="Semua">Semua Kategori</option>
-        <option value="Infrastruktur">Infrastruktur</option>
-        <option value="Keamanan">Keamanan</option>
-        <option value="Kegiatan">Kegiatan</option>
+        <option value="infrastruktur">Infrastruktur</option>
+        <option value="keamanan">Keamanan</option>
+        <option value="kegiatan">Kegiatan</option>
       </select>
       <select class="form-select" id="filterBulan" style="max-width:360px;">
         <option value="Semua">Semua Bulan</option>
-        <option>Januari</option>
-        <option>Februari</option>
-        <option>Maret</option>
-        <option>April</option>
-        <option>Mei</option>
-        <option>Juni</option>
-        <option>Juli</option>
-        <option>Agustus</option>
-        <option>September</option>
-        <option>Oktober</option>
-        <option>Novemberber</option>
-        <option>Desember</option>
+        <option value="Januari">Januari</option>
+        <option value="Februari">Februari</option>
+        <option value="Maret">Maret</option>
+        <option value="April">April</option>
+        <option value="Mei">Mei</option>
+        <option value="Juni">Juni</option>
+        <option value="Juli">Juli</option>
+        <option value="Agustus">Agustus</option>
+        <option value="September">September</option>
+        <option value="Oktober">Oktober</option>
+        <option value="November">November</option>
+        <option value="Desember">Desember</option>
       </select>
-
     </div>
-
-   
-
+    
     <!-- Daftar Pengeluaran -->
     <div id="pengeluaranList"></div>
   </main>
@@ -435,8 +401,6 @@ while ($row = mysqli_fetch_assoc($result_pengeluaran)) {
       </div>
     </div>
   </div>
-
-
 
   <script src="./assets/bootstrap-5.3.8-dist/js/bootstrap.bundle.min.js"></script>
   <script>

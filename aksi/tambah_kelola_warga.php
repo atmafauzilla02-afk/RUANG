@@ -1,64 +1,52 @@
 <?php
 session_start();
 include '../koneksi/koneksi.php';
-if (!isset($_SESSION['id_pengguna'])) exit(header("Location: ../login.php"));
 
-if (!isset($_SESSION['id_pengguna'])) {
-    echo "<script>
-        alert('Anda harus login terlebih dahulu!');
-        window.location.href = '../login.php';
-    </script>";
+if (!$koneksi) {
+    die("Koneksi database gagal: " . mysqli_connect_error());
+}
+
+$nama    = mysqli_real_escape_string($koneksi, $_POST['nama_warga']);
+$nik     = mysqli_real_escape_string($koneksi, $_POST['nik']);
+$alamat  = mysqli_real_escape_string($koneksi, $_POST['alamat']);
+$no_telp = mysqli_real_escape_string($koneksi, $_POST['no_telp']);
+
+if (empty(trim($nama)) || empty(trim($nik)) || empty(trim($alamat)) || empty(trim($no_telp))) {
+    echo "<script>alert('Semua field wajib diisi!'); window.history.back();</script>";
     exit;
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-
-    $nama_warga = $_POST['nama_warga'] ?? '';
-    $nik        = $_POST['nik'] ?? '';
-    $alamat     = $_POST['alamat'] ?? '';
-    $no_telp    = $_POST['no_telp'] ?? '';
-
-    // default password
-    $default_password = password_hash($nik, PASSWORD_DEFAULT);
-
-    // 1. INSERT KE PENGGUNA
-    $sqlPengguna = mysqli_query($koneksi, 
-        "INSERT INTO pengguna (nik, nama, alamat, no_telp, role, password) 
-         VALUES ('$nik', '$nama_warga', '$alamat', '$no_telp', 'warga', '$default_password')"
-    );
+$cek_nik = mysqli_query($koneksi, "SELECT id_pengguna FROM pengguna WHERE nik = '$nik'");
+if (!$cek_nik) {
+    echo "<script>alert('Error query: " . mysqli_error($koneksi) . "'); window.history.back();</script>";
+    exit;
+}
+if (mysqli_num_rows($cek_nik) > 0) {
+    echo "<script>alert('NIK $nik sudah terdaftar! Gunakan NIK lain.'); window.history.back();</script>";
+    exit;
 }
 
-    if (!$sqlPengguna) {
-        echo "<script>
-                alert('Gagal insert pengguna: ".mysqli_error($koneksi)."');
-                window.history.back();
-              </script>";
-        exit;
-    }
+$insert_pengguna = mysqli_query($koneksi, "INSERT INTO pengguna 
+    (nik, nama, alamat, no_telp, password, role, status) 
+    VALUES 
+    ('$nik', '$nama', '$alamat', '$no_telp', '$nik', 'warga', 'Aktif')");
 
-    // 2. AMBIL id_pengguna TERAKHIR
-    $id_pengguna_baru = mysqli_insert_id($koneksi);
+if (!$insert_pengguna) {
+    echo "<script>alert('Gagal menambah akun pengguna!\\nError: " . mysqli_error($koneksi) . "'); window.history.back();</script>";
+    exit;
+}
 
-    // 3. INSERT KE WARGA
-    $sqlWarga = mysqli_query($koneksi,
-        "INSERT INTO warga (id_pengguna) VALUES ('$id_pengguna_baru')"
-    );
+$id_pengguna_baru = mysqli_insert_id($koneksi);
 
-    if ($sqlWarga) {
-        echo "<script>
-            alert('Data Berhasil Disimpan!');
-            window.location.href = '../kelola_warga.php';
-        </script>";
-    } else {
-        echo "<script>
-            alert('Gagal insert ke tabel warga: ".mysqli_error($koneksi)."');
-            window.history.back();
-        </script>";
-    }
+$insert_warga = mysqli_query($koneksi, "INSERT INTO warga (id_pengguna) VALUES ('$id_pengguna_baru')");
 
-if (mysqli_stmt_execute($stmt)) {
-    echo "<script>alert('Warga berhasil ditambahkan!'); window.location='../kelola_warga.php';</script>";
+if ($insert_warga) {
+    echo "<script>
+        alert('Warga berhasil ditambahkan!\\n\\nUsername (NIK): $nik\\nPassword: $nik\\nStatus: Aktif\\n\\nWarga bisa langsung login dengan NIK sebagai username & password.');
+        window.location='../kelola_warga.php';
+    </script>";
 } else {
-    echo "<script>alert('Gagal menambah warga!'); history.back();</script>";
+    mysqli_query($koneksi, "DELETE FROM pengguna WHERE id_pengguna = '$id_pengguna_baru'");
+    echo "<script>alert('Gagal menambah data warga!\\nError: " . mysqli_error($koneksi) . "'); window.history.back();</script>";
 }
-?>  
+?>

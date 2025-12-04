@@ -26,33 +26,17 @@ $masuk = mysqli_fetch_array(mysqli_query($koneksi,
 $keluar = mysqli_fetch_array(mysqli_query($koneksi, 
     "SELECT COALESCE(SUM(nominal_pengeluaran), 0) AS total 
      FROM pengeluaran 
-     WHERE status_persetujuan = 'Disetujui'"))[0] ?? 0;
+     WHERE status_persetujuan = 'Disetujui'
+       AND YEAR(tanggal_pengeluaran) = '$tahun_ini'"))['total'] ?? 0;
 
 $saldo = $masuk - $keluar;
-
-// Pemasukan bulan ini
-$pemasukan_bulan_ini = mysqli_fetch_array(mysqli_query($koneksi, 
-    "SELECT COALESCE(SUM(nominal_pembayaran), 0) AS total 
-     FROM pembayaran 
-     WHERE status_pembayaran = 'lunas'
-       AND bulan_pembayaran = '$bulan_ini'
-       AND tahun_pembayaran = '$tahun_ini'"
-))[0] ?? 0;
-
-// Pengeluaran bulan ini
-$pengeluaran_bulan_ini = mysqli_fetch_array(mysqli_query($koneksi, 
-    "SELECT COALESCE(SUM(nominal_pengeluaran), 0) AS total 
-     FROM pengeluaran 
-     WHERE status_persetujuan = 'Disetujui'
-       AND MONTH(tanggal_pengeluaran) = MONTH(CURDATE())
-       AND YEAR(tanggal_pengeluaran) = YEAR(CURDATE())"
-))[0] ?? 0;
 
 $query_pengeluaran = "
     SELECT nama_pengeluaran, keterangan_pengeluaran, nominal_pengeluaran, 
            tanggal_pengeluaran, jenis_pengeluaran 
     FROM pengeluaran 
     WHERE status_persetujuan = 'Disetujui' 
+      AND YEAR(tanggal_pengeluaran) = '$tahun_ini'
     ORDER BY tanggal_pengeluaran DESC";
 
 $result_pengeluaran = mysqli_query($koneksi, $query_pengeluaran);
@@ -332,44 +316,44 @@ while ($row = mysqli_fetch_assoc($result_pengeluaran)) {
   <!-- MAIN -->
   <main class="main-content">
     <div class="text-center mb-4">
-      <h2 class="fw-bold">Pemasukan dan Pengeluaran Tahun <span id="tahun">2025</span></h2>
+      <h2 class="fw-bold">Pemasukan dan Pengeluaran Tahun <?= $tahun_ini ?></h2>
     </div>
 
    <!-- Info Box (3 Kolom) -->
-<div class="row g-3 mb-4">
-  <div class="col-lg-4 col-md-6">
-    <div class="info-card h-100">
-      <div class="d-flex justify-content-between align-items-center">
-        <span>Pemasukan Bulan Ini</span>
-        <i class="fa-solid fa-arrow-trend-up icon text-success"></i>
+  <div class="row g-3 mb-4">
+    <div class="col-lg-4 col-md-6">
+      <div class="info-card h-100">
+        <div class="d-flex justify-content-between align-items-center">
+          <span>Pemasukan Tahun Ini</span>
+          <i class="fa-solid fa-arrow-trend-up icon text-success"></i>
+        </div>
+        <h4 class="text-success">Rp<?= number_format($masuk, 0, ',', '.') ?></h4>
+        <small class="text-muted">Total iuran lunas tahun <?= $tahun_ini ?></small>
       </div>
-      <h4 class="text-success">Rp<?= number_format($pemasukan_bulan_ini, 0, ',', '.') ?></h4>
-      <small class="text-muted">Pemasukan bulan September</small>
     </div>
-  </div>
 
-  <div class="col-lg-4 col-md-6">
-    <div class="info-card h-100">
-      <div class="d-flex justify-content-between align-items-center">
-        <span>Pengeluaran Bulan Ini</span>
-        <i class="fa-solid fa-arrow-trend-down icon text-danger"></i>
+    <div class="col-lg-4 col-md-6">
+      <div class="info-card h-100">
+        <div class="d-flex justify-content-between align-items-center">
+          <span>Pengeluaran Tahun Ini</span>
+          <i class="fa-solid fa-arrow-trend-down icon text-danger"></i>
+        </div>
+        <h4 class="text-danger">Rp<?= number_format($keluar, 0, ',', '.') ?></h4>
+        <small class="text-muted">Total pengeluaran disetujui tahun <?= $tahun_ini ?></small>
       </div>
-      <h4 class="text-danger">Rp<?= number_format($pengeluaran_bulan_ini, 0, ',', '.') ?></h4>
-      <small class="text-muted">Pengeluaran bulan September</small>
     </div>
-  </div>
 
-  <div class="col-lg-4 col-md-12">
-    <div class="info-card h-100">
-      <div class="d-flex justify-content-between align-items-center">
-        <span>Total Saldo</span>
-        <i class="fa-solid fa-wallet icon text-warning"></i>
+    <div class="col-lg-4 col-md-12">
+      <div class="info-card h-100">
+        <div class="d-flex justify-content-between align-items-center">
+          <span>Saldo Akhir Tahun Ini</span>
+          <i class="fa-solid fa-wallet icon text-warning"></i>
+        </div>
+        <h4>Rp<?= number_format($saldo, 0, ',', '.') ?></h4>
+        <small class="text-muted">Sisa kas per <?= date('d F Y') ?></small>
       </div>
-      <h4>Rp<?= number_format($saldo, 0, ',', '.') ?></h4>
-      <small class="text-muted">Saldo akhir bulan ini</small>
     </div>
   </div>
-</div>
 
 
     <!-- Filter -->
@@ -383,9 +367,18 @@ while ($row = mysqli_fetch_assoc($result_pengeluaran)) {
       </select>
       <select class="form-select" id="filterBulan" style="max-width:360px;">
         <option value="Semua">Semua Bulan</option>
-        <option>Januari</option><option>Februari</option><option>Maret</option>
-        <option>April</option><option>Mei</option><option>Juni</option>
-        <option>Juli</option><option>Agustus</option><option>September</option>
+        <option value="Januari">Januari</option>
+        <option value="Februari">Februari</option>
+        <option value="Maret">Maret</option>
+        <option value="April">April</option>
+        <option value="Mei">Mei</option>
+        <option value="Juni">Juni</option>
+        <option value="Juli">Juli</option>
+        <option value="Agustus">Agustus</option>
+        <option value="September">September</option>
+        <option value="Oktober">Oktober</option>
+        <option value="November">November</option>
+        <option value="Desember">Desember</option>
       </select>
     </div>
     

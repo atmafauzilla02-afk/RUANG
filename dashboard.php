@@ -1,55 +1,51 @@
 <?php
 session_start();
 
-// Cek login & role warga
+include 'koneksi/koneksi.php';
+
+$bulanIndo = ['januari','februari','maret','april','mei','juni','juli','agustus','september','oktober','november','desember'];
+$bulan_ini = $bulanIndo[date('n')-1];
+$tahun_ini = date('Y');
+
 if (!isset($_SESSION['id_pengguna']) || $_SESSION['role'] !== 'warga') {
     header("Location: index.php");
     exit;
 }
 
-// Koneksi Database
 $koneksi = mysqli_connect("localhost", "root", "", "ruang");
 if (!$koneksi) {
     die("Koneksi gagal: " . mysqli_connect_error());
 }
 
-// === WAJIB: Deklarasi bulan & tahun ini ===
 $bulan_eng = ['january','february','march','april','may','june','july','august','september','october','november','december'];
 $bulan_ini = $bulan_eng[date('n') - 1];
 $tahun_ini = date('Y');
 
 $id_warga = $_SESSION['id_warga'];
 $tahun_ini = date('Y');
-$total_harus_bayar = 36;
+$total_stmt = mysqli_prepare($koneksi, 
+    "SELECT COUNT(*) FROM pembayaran WHERE id_warga = ? AND tahun_pembayaran = ?");
+mysqli_stmt_bind_param($total_stmt, "ii", $_SESSION['id_warga'], $tahun_ini);
+mysqli_stmt_execute($total_stmt);
+mysqli_stmt_bind_result($total_stmt, $total_harus_bayar);
+mysqli_stmt_fetch($total_stmt);
+mysqli_stmt_close($total_stmt);
 
-$stmt = mysqli_prepare($koneksi, 
-    "SELECT COUNT(*) AS lunas 
-     FROM pembayaran 
-     WHERE id_warga = ? 
-       AND tahun_pembayaran = ? 
-       AND status_pembayaran = 'lunas'");
-
-if ($stmt) {
-    mysqli_stmt_bind_param($stmt, "ii", $id_warga, $tahun_ini);
-    mysqli_stmt_execute($stmt);
-    $result = mysqli_stmt_get_result($stmt);
-    $row = mysqli_fetch_assoc($result);
-    $sudah_bayar = (int)$row['lunas'];
-    mysqli_stmt_close($stmt);
-} else {
-    // Kalau query gagal (tabel belum ada, kolom salah, dll) → tetap aman
-    $sudah_bayar = 0;
-}
+$lunas_stmt = mysqli_prepare($koneksi, 
+    "SELECT COUNT(*) FROM pembayaran WHERE id_warga = ? AND tahun_pembayaran = ? AND status_pembayaran = 'lunas'");
+mysqli_stmt_bind_param($lunas_stmt, "ii", $_SESSION['id_warga'], $tahun_ini);
+mysqli_stmt_execute($lunas_stmt);
+mysqli_stmt_bind_result($lunas_stmt, $sudah_bayar);
+mysqli_stmt_fetch($lunas_stmt);
+mysqli_stmt_close($lunas_stmt);
 
 $belum_bayar = $total_harus_bayar - $sudah_bayar;
 
 $iuran_terbayar_text = "$sudah_bayar / $total_harus_bayar Iuran";
 $iuran_belum_text = $belum_bayar > 0 
-    ? "$belum_bayar iuran belum dibayar tahun ini"
+    ? "$belum_bayar iuran belum dibayar tahun ini" 
     : "Semua iuran sudah lunas tahun ini!";
-// ==================================================================
 
-// Total Saldo Kas
 $masuk = mysqli_fetch_array(mysqli_query($koneksi, 
     "SELECT COALESCE(SUM(nominal_pembayaran), 0) AS total 
      FROM pembayaran 
@@ -62,16 +58,15 @@ $keluar = mysqli_fetch_array(mysqli_query($koneksi,
 
 $saldo = $masuk - $keluar;
 
-// Tunggakan bulan ini
 $tunggakan = mysqli_fetch_array(mysqli_query($koneksi, 
     "SELECT COUNT(*) AS jumlah 
      FROM pembayaran 
-     WHERE status_pembayaran IN ('belum','menunggu')
+     WHERE id_warga = '{$_SESSION['id_warga']}'
        AND bulan_pembayaran = '$bulan_ini'
-       AND tahun_pembayaran = '$tahun_ini'"
+       AND tahun_pembayaran = '$tahun_ini'
+       AND status_pembayaran IN ('belum','menunggu')"
 ))[0] ?? 0;
 
-// Pemasukan bulan ini
 $pemasukan_bulan_ini = mysqli_fetch_array(mysqli_query($koneksi, 
     "SELECT COALESCE(SUM(nominal_pembayaran), 0) AS total 
      FROM pembayaran 
@@ -80,7 +75,6 @@ $pemasukan_bulan_ini = mysqli_fetch_array(mysqli_query($koneksi,
        AND tahun_pembayaran = '$tahun_ini'"
 ))[0] ?? 0;
 
-// Pengeluaran bulan ini
 $pengeluaran_bulan_ini = mysqli_fetch_array(mysqli_query($koneksi, 
     "SELECT COALESCE(SUM(nominal_pengeluaran), 0) AS total 
      FROM pengeluaran 
@@ -197,11 +191,11 @@ $pengeluaran_bulan_ini = mysqli_fetch_array(mysqli_query($koneksi,
       <div class="col-md-6">
         <div class="info-card">
           <div class="d-flex justify-content-between align-items-center">
-            <span>Iuran Terbayar Tahun Ini</span>
-            <i class="fa-solid fa-wallet icon text-warning"></i>
+            <span>Iuran Tertunggak Bulan Ini</span>
+            <i class="fa-solid fa-exclamation-triangle icon text-danger"></i>
           </div>
-          <h4 class="text-warning fw-bold"><?= $iuran_terbayar_text ?></h4>
-          <small class="text-muted"><?= $iuran_belum_text ?></small>
+          <h4 class="text-danger fw-bold"><?= $tunggakan ?> iuran</h4>
+          <small class="text-muted">Per <?= ucfirst($bulan_ini) ?> <?= $tahun_ini ?></small>
         </div>
       </div>
 
