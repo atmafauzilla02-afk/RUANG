@@ -286,10 +286,10 @@ if (!isset($_SESSION['id_pengguna'])) {
       <li><a href="Pengajuan.php" class="nav-link"><i class="fa-solid fa-file-import me-2"></i>Pengajuan</a></li>
       <li><a href="laporanBendahara.php" class="nav-link"><i class="fa-solid fa-file-lines me-2"></i>Laporan</a></li>
     </ul>
-    <button class="logout-btn" onclick="logout()">
-      <i class="fa-solid fa-right-from-bracket me-2"></i>Sign Out
-    </button>
-  </aside>
+    <a href="logout.php" class="btn btn-dark w-75 mx-auto mt-auto mb-4">
+    <i class="fa-solid fa-right-from-bracket me-2"></i>Sign Out
+  </a>
+</aside>
 
   <!-- MAIN CONTENT -->
   <main class="main-content">

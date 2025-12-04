@@ -212,9 +212,9 @@ include 'koneksi/koneksi.php';
 /* FIX POSISI BEL SUPAYA SELALU DI KANAN BAWAH */
 .floating-btn {
     position: fixed !important;
-    bottom: 20px !important; /* Jarak dari bawah (bisa ubah) */
-    right: 20px !important;  /* Jarak dari kanan (bisa ubah) */
-    left: auto !important;   /* Pastikan tidak tertarik ke kiri */
+    bottom: 20px !important; 
+    right: 20px !important;  
+    left: auto !important;  
     background: linear-gradient(135deg, #f5c83b, #caa43b);
     color: white;
     border: none;
@@ -223,10 +223,8 @@ include 'koneksi/koneksi.php';
     border-radius: 50%;
     box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     font-size: 1.6rem;
-    z-index: 5000 !important; /* selalu di atas elemen lain */
+    z-index: 5000 !important;
 }
-
-
 
   </style>
 </head>
@@ -258,10 +256,23 @@ include 'koneksi/koneksi.php';
   </aside>
   <div id="overlay" class="overlay"></div>
 
-  
+<!-- ambil detail -->
+<?php
+$detail = null;
 
-    <!-- OVERLAY UNTUK MENUTUP SIDEBAR SAAT MOBILE -->
-  <div id="overlay" class="overlay"></div>
+if (isset($_GET['detail'])) {
+    $id = $_GET['detail'];
+
+    $detail = mysqli_query($koneksi, "
+    SELECT p.*, pg.nama AS nama_warga, p.bukti_pembayaran
+    FROM pembayaran p
+    JOIN warga w ON p.id_warga = w.id_warga
+    JOIN pengguna pg ON w.id_pengguna = pg.id_pengguna
+    WHERE p.id_pembayaran = '$id'
+")->fetch_assoc();
+
+}
+?>
 
   <!-- MAIN -->
   <main class="main-content">
@@ -272,7 +283,7 @@ include 'koneksi/koneksi.php';
   <div class="col-lg-2 col-md-3 col-6">
     <select id="filterKategori" class="form-select form-select-sm">
       <option value="">Semua Kategori</option>
-      <option>Iuran Kas</option>
+      <option>Kas</option>
       <option>Keamanan</option>
       <option>Kebersihan</option>
     </select>
@@ -540,27 +551,40 @@ include 'koneksi/koneksi.php';
 </div>
 
 <!-- MODAL DETAIL -->
-<div class="modal fade" id="detailModal" tabindex="-1">
+<?php if ($detail): ?>
+<div class="modal fade show" id="detailModal" style="display:block; background: rgba(0,0,0,0.4);">
 <div class="modal-dialog">
 <div class="modal-content">
 
 <div class="modal-header bg-warning">
 <h5 class="modal-title">Detail Pembayaran</h5>
+<a href="iuran.php" class="btn-close"></a>
 </div>
 
 <div class="modal-body">
-<p>Nama: <span id="dNama"></span></p>
-<p>Kategori: <span id="dKategori"></span></p>
-<p>Bulan: <span id="dBulan"></span></p>
-<p>Tahun: <span id="dTahun"></span></p>
-<p>Nominal: Rp<span id="dNominal"></span></p>
-<p>Status: <span id="dStatus"></span></p>
-<img id="dBukti" class="img-fluid mt-2">
+
+<p><b>Nama:</b> <?= $detail['nama_warga']; ?></p>
+<p><b>Kategori:</b> <?= ucfirst($detail['jenis_pembayaran']); ?></p>
+<p><b>Bulan:</b> <?= ucfirst($detail['bulan_pembayaran']); ?></p>
+<p><b>Tahun:</b> <?= $detail['tahun_pembayaran']; ?></p>
+<p><b>Nominal:</b> Rp<?= number_format($detail['nominal_pembayaran'],0,',','.'); ?></p>
+<p><b>Status:</b> <?= ucfirst($detail['status_pembayaran']); ?></p>
+
+<?php if ($detail['bukti_pembayaran']): ?>
+    <img src="assets/bukti_pembayaran/<?= $detail['bukti_pembayaran']; ?>" 
+     class="img-fluid rounded mt-2">
+
+<?php else: ?>
+    <p class="text-danger">Belum ada bukti pembayaran.</p>
+<?php endif; ?>
+
 </div>
 
 </div>
 </div>
 </div>
+<?php endif; ?>
+
 
 <!-- MODAL BAYAR TUNAI -->
 <div class="modal fade" id="modalBayarTunai" tabindex="-1">
@@ -609,6 +633,16 @@ include 'koneksi/koneksi.php';
 </div>
 
 <script src="./assets/bootstrap-5.3.8-dist/js/bootstrap.bundle.min.js"></script>
+<script>
+function setNominal() {
+    let jenis = document.getElementById('jenisIuran').value;
+    let nominal = document.getElementById('nominalIuran');
+
+    if (jenis === 'kas') nominal.value = 50000;
+    else if (jenis === 'keamanan') nominal.value = 30000;
+    else if (jenis === 'kebersihan') nominal.value = 20000;
+}
+</script>
 
 <script>
 const detailModal = document.getElementById('detailModal');
