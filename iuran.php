@@ -212,9 +212,9 @@ include 'koneksi/koneksi.php';
 /* FIX POSISI BEL SUPAYA SELALU DI KANAN BAWAH */
 .floating-btn {
     position: fixed !important;
-    bottom: 20px !important; /* Jarak dari bawah (bisa ubah) */
-    right: 20px !important;  /* Jarak dari kanan (bisa ubah) */
-    left: auto !important;   /* Pastikan tidak tertarik ke kiri */
+    bottom: 20px !important; 
+    right: 20px !important;  
+    left: auto !important;  
     background: linear-gradient(135deg, #f5c83b, #caa43b);
     color: white;
     border: none;
@@ -223,10 +223,8 @@ include 'koneksi/koneksi.php';
     border-radius: 50%;
     box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     font-size: 1.6rem;
-    z-index: 5000 !important; /* selalu di atas elemen lain */
+    z-index: 5000 !important;
 }
-
-
 
   </style>
 </head>
@@ -258,10 +256,23 @@ include 'koneksi/koneksi.php';
   </aside>
   <div id="overlay" class="overlay"></div>
 
-  
+<!-- ambil detail -->
+<?php
+$detail = null;
 
-    <!-- OVERLAY UNTUK MENUTUP SIDEBAR SAAT MOBILE -->
-  <div id="overlay" class="overlay"></div>
+if (isset($_GET['detail'])) {
+    $id = $_GET['detail'];
+
+    $detail = mysqli_query($koneksi, "
+    SELECT p.*, pg.nama AS nama_warga, p.bukti_pembayaran
+    FROM pembayaran p
+    JOIN warga w ON p.id_warga = w.id_warga
+    JOIN pengguna pg ON w.id_pengguna = pg.id_pengguna
+    WHERE p.id_pembayaran = '$id'
+")->fetch_assoc();
+
+}
+?>
 
   <!-- MAIN -->
   <main class="main-content">
@@ -272,7 +283,7 @@ include 'koneksi/koneksi.php';
   <div class="col-lg-2 col-md-3 col-6">
     <select id="filterKategori" class="form-select form-select-sm">
       <option value="">Semua Kategori</option>
-      <option>Iuran Kas</option>
+      <option>Kas</option>
       <option>Keamanan</option>
       <option>Kebersihan</option>
     </select>
@@ -355,9 +366,55 @@ while($data=mysqli_fetch_assoc($query)){
 <td><?= $data['tahun_pembayaran']; ?></td>
 <td>Rp<?= number_format($data['nominal_pembayaran'],0,',','.'); ?></td>
 
+<!--MODAL TAMBAH BUKTI-->
+<div class="modal fade" id="tambahBukti<?= $data['id_pembayaran']; ?>" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+
+      <form action="aksi/upload_bukti.php" method="POST" enctype="multipart/form-data">
+
+        <div class="modal-header bg-warning">
+          <h5 class="modal-title">Upload Bukti Pembayaran</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+
+        <div class="modal-body">
+
+          <input type="hidden" name="id_pembayaran" value="<?= $data['id_pembayaran']; ?>">
+
+          <!-- Tampilkan kategori -->
+          <div class="mb-2">
+            <label class="fw-bold">Jenis Iuran</label>
+            <input type="text" class="form-control" value="<?= ucfirst($data['jenis_pembayaran']); ?>" readonly>
+          </div>
+
+          <!-- Tampilkan nominal -->
+          <div class="mb-2">
+            <label class="fw-bold">Total Pembayaran</label>
+            <input type="text" class="form-control" 
+              value="Rp<?= number_format($data['nominal_pembayaran'], 0, ',', '.'); ?>" readonly>
+          </div>
+
+          <!-- Input foto -->
+          <label class="fw-bold">Upload Bukti (Foto)</label>
+          <input type="file" name="bukti" class="form-control" required>
+
+        </div>
+
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-success">Upload</button>
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+</div>
+
+
 <td>
 <?php
-if($data['status_pembayaran']=='lunas'){
+if($data['status_pembayaran']=='lunas') {
 echo "<span class='text-success fw-bold'>Lunas</span>";
 }elseif($data['status_pembayaran']=='menunggu'){
 echo "<span class='text-warning fw-bold'>Menunggu</span>";
@@ -368,27 +425,33 @@ echo "<span class='text-danger fw-bold'>Belum</span>";
 </td>
 
 <td>
-<?php if($data['status_pembayaran']=='menunggu'){ ?>
+<?php if ($data['status_pembayaran'] == 'belum') { ?>
 
-<button class="btn btn-primary btn-sm"
-data-bs-toggle="modal"
-data-bs-target="#detailModal"
-data-nama="<?= $data['nama']; ?>"
-data-kategori="<?= $data['jenis_pembayaran']; ?>"
-data-bulan="<?= $data['bulan_pembayaran']; ?>"
-data-tahun="<?= $data['tahun_pembayaran']; ?>"
-data-nominal="<?= $data['nominal_pembayaran']; ?>"
-data-status="<?= $data['status_pembayaran']; ?>"
-data-bukti="<?= $data['bukti_pembayaran']; ?>">
-Detail
-</button>
+    <!-- TOMBOL TAMBAH (UPLOAD BUKTI) -->
+    <button class="btn btn-warning btn-sm"
+        data-bs-toggle="modal"
+        data-bs-target="#tambahBukti<?= $data['id_pembayaran']; ?>">
+        + Tambah
+    </button>
 
-<a href="aksi/konfirmasi_iuran.php?id=<?= $data['id_pembayaran']; ?>" class="btn btn-success btn-sm">Konfirmasi</a>
+<?php } elseif ($data['status_pembayaran'] == 'menunggu') { ?>
 
-<a href="aksi/tolak_iuran.php?id=<?= $data['id_pembayaran']; ?>" class="btn btn-danger btn-sm">Tolak</a>
+    <!-- TOMBOL DETAIL -->
+   <a href="iuran.php?detail=<?= $data['id_pembayaran']; ?>" 
+   class="btn btn-primary btn-sm">Detail</a> 
 
-<?php } else { echo "-"; } ?>
+    <a href="aksi/konfirmasi_iuran.php?id=<?= $data['id_pembayaran']; ?>" class="btn btn-success btn-sm">Konfirmasi</a>
+
+    <a href="aksi/tolak_iuran.php?id=<?= $data['id_pembayaran']; ?>" class="btn btn-danger btn-sm">Tolak</a>
+
+<?php } else { ?>
+
+    <!-- STATUS LUNAS -->
+    <span class="text-success fw-bold"> - </span>
+
+<?php } ?>
 </td>
+
 
 </tr>
 <?php } ?>
@@ -412,17 +475,25 @@ Detail
 <div class="modal-body">
 
 <label>Warga</label>
-<select name="id_warga" class="form-control mb-2">
-<?php
-$w = mysqli_query($koneksi,"SELECT * FROM warga");
-while($x=mysqli_fetch_assoc($w)){
-echo "<option value='$x[id_warga]'>$x[id_warga]</option>";
-}
-?>
-</select>
+<select name="id_warga" class="form-control mb-2" required>
+    <option value="">-- Pilih Warga --</option>
+    <?php
+    $w = mysqli_query($koneksi, "
+        SELECT warga.id_warga, pengguna.nama 
+        FROM warga
+        JOIN pengguna ON warga.id_pengguna = pengguna.id_pengguna
+    ");
+    while ($x = mysqli_fetch_assoc($w)) {
+        echo "<option value='{$x['id_warga']}'>{$x['nama']}</option>";
+    }
+    ?>
+  </select>
+
+
+
 
 <label>Kategori</label>
-<select name="jenis" class="form-control mb-2">
+<select name="jenis" id="jenisIuran" class="form-control mb-2" onchange="setNominal()">
 <option value="kas">Kas</option>
 <option value="keamanan">Keamanan</option>
 <option value="kebersihan">Kebersihan</option>
@@ -435,7 +506,9 @@ echo "<option value='$x[id_warga]'>$x[id_warga]</option>";
 <input type="number" name="tahun" class="form-control mb-2">
 
 <label>Nominal</label>
-<input type="number" name="nominal" class="form-control mb-2">
+<label>Nominal</label>
+<input type="number" id="nominalIuran" name="nominal" class="form-control mb-2" readonly>
+
 
 </div>
 
@@ -444,51 +517,126 @@ echo "<option value='$x[id_warga]'>$x[id_warga]</option>";
 </div>
 
 </form>
-
 </div>
 </div>
 </div>
 
 <!-- MODAL DETAIL -->
-<div class="modal fade" id="detailModal" tabindex="-1">
+<?php if ($detail): ?>
+<div class="modal fade show" id="detailModal" style="display:block; background: rgba(0,0,0,0.4);">
 <div class="modal-dialog">
 <div class="modal-content">
 
 <div class="modal-header bg-warning">
 <h5 class="modal-title">Detail Pembayaran</h5>
+<a href="iuran.php" class="btn-close"></a>
 </div>
 
 <div class="modal-body">
-<p>Nama: <span id="dNama"></span></p>
-<p>Kategori: <span id="dKategori"></span></p>
-<p>Bulan: <span id="dBulan"></span></p>
-<p>Tahun: <span id="dTahun"></span></p>
-<p>Nominal: Rp<span id="dNominal"></span></p>
-<p>Status: <span id="dStatus"></span></p>
-<img id="dBukti" class="img-fluid mt-2">
+
+<p><b>Nama:</b> <?= $detail['nama_warga']; ?></p>
+<p><b>Kategori:</b> <?= ucfirst($detail['jenis_pembayaran']); ?></p>
+<p><b>Bulan:</b> <?= ucfirst($detail['bulan_pembayaran']); ?></p>
+<p><b>Tahun:</b> <?= $detail['tahun_pembayaran']; ?></p>
+<p><b>Nominal:</b> Rp<?= number_format($detail['nominal_pembayaran'],0,',','.'); ?></p>
+<p><b>Status:</b> <?= ucfirst($detail['status_pembayaran']); ?></p>
+
+<?php if ($detail['bukti_pembayaran']): ?>
+    <img src="assets/bukti_pembayaran/<?= $detail['bukti_pembayaran']; ?>" 
+     class="img-fluid rounded mt-2">
+
+<?php else: ?>
+    <p class="text-danger">Belum ada bukti pembayaran.</p>
+<?php endif; ?>
+
 </div>
 
 </div>
 </div>
 </div>
+<?php endif; ?>
+
 
 <script src="./assets/bootstrap-5.3.8-dist/js/bootstrap.bundle.min.js"></script>
+<script>
+function setNominal() {
+    let jenis = document.getElementById('jenisIuran').value;
+    let nominal = document.getElementById('nominalIuran');
+
+    if (jenis === 'kas') nominal.value = 50000;
+    else if (jenis === 'keamanan') nominal.value = 30000;
+    else if (jenis === 'kebersihan') nominal.value = 20000;
+}
+</script>
 
 <script>
-var detailModal = document.getElementById('detailModal');
-detailModal.addEventListener('show.bs.modal', function (event) {
-var btn = event.relatedTarget;
+// FILTER TABEL IURAN
 
-document.getElementById('dNama').innerText = btn.getAttribute('data-nama');
-document.getElementById('dKategori').innerText = btn.getAttribute('data-kategori');
-document.getElementById('dBulan').innerText = btn.getAttribute('data-bulan');
-document.getElementById('dTahun').innerText = btn.getAttribute('data-tahun');
-document.getElementById('dNominal').innerText = btn.getAttribute('data-nominal');
-document.getElementById('dStatus').innerText = btn.getAttribute('data-status');
+// Ambil elemen filter
+const filterKategori = document.getElementById("filterKategori");
+const filterBulan    = document.getElementById("filterBulan");
+const filterTahun    = document.getElementById("filterTahun");
+const filterStatus   = document.getElementById("filterStatus");
+const searchInput    = document.getElementById("searchInput");
 
-document.getElementById('dBukti').src = './uploads/' + btn.getAttribute('data-bukti');
+// Ambil semua baris tabel
+const rows = document.querySelectorAll("table tbody tr");
+
+// FUNGSI FILTER UTAMA
+function applyFilter() {
+    const kategori = filterKategori.value.toLowerCase();
+    const bulan    = filterBulan.value.toLowerCase();
+    const tahun    = filterTahun.value.toLowerCase();
+    const status   = filterStatus.value.toLowerCase();
+    const search   = searchInput.value.toLowerCase();
+
+    rows.forEach(row => {
+        const namaCell     = row.cells[1].innerText.toLowerCase();
+        const kategoriCell = row.cells[2].innerText.toLowerCase();
+        const bulanCell    = row.cells[3].innerText.toLowerCase();
+        const tahunCell    = row.cells[4].innerText.toLowerCase();
+        const statusCell   = row.cells[6].innerText.toLowerCase();
+
+        let show = true;
+
+        if (kategori && kategoriCell !== kategori) show = false;
+        if (bulan && bulanCell !== bulan) show = false;
+        if (tahun && tahunCell !== tahun) show = false;
+        if (status && statusCell !== status) show = false;
+
+        if (search && !namaCell.includes(search)) show = false;
+
+        row.style.display = show ? "" : "none";
+    });
+}
+
+// filter
+filterKategori.addEventListener("change", applyFilter);
+filterBulan.addEventListener("change", applyFilter);
+filterTahun.addEventListener("change", applyFilter);
+filterStatus.addEventListener("change", applyFilter);
+searchInput.addEventListener("keyup", applyFilter);
+
+
+// MOBILE SIDEBAR
+const sidebar  = document.getElementById("sidebar");
+const menuBtn  = document.getElementById("menuToggle");
+const overlay  = document.getElementById("overlay");
+
+
+menuBtn.addEventListener("click", function () {
+    sidebar.classList.toggle("show");
+    overlay.classList.toggle("active");
+});
+
+
+overlay.addEventListener("click", function () {
+    sidebar.classList.remove("show");
+    overlay.classList.remove("active");
 });
 </script>
+
+
 
 </body>
 </html>

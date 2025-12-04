@@ -76,45 +76,12 @@ $tahun_result = mysqli_query($koneksi, $tahun_query);
 
 <div id="overlay" class="overlay"></div>
 
-<!-- MODAL PEMBAYARAN -->
-<div class="modal fade" id="modalPembayaran" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered modal-lg">
-    <div class="modal-content p-3 rounded-4 border-0 shadow-lg">
-      <div class="modal-header border-0">
-        <h5 class="modal-title fw-bold">Pembayaran Iuran RT/RW</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <p class="text-center fw-bold text-primary mb-4 modal-summary"></p>
-
-
-        <div class="mb-3">
-          <label class="form-label fw-semibold">Metode Pembayaran</label>
-          <div class="d-grid gap-2">
-            <button class="btn btn-outline-secondary metode-btn active" data-metode="Transfer Bank">
-              Transfer Bank
-            </button>
-            <button class="btn btn-outline-secondary metode-btn" data-metode="Uang Tunai">
-              Uang Tunai
-            </button>
-          </div>
-        </div>
-
-        <div id="infoArea"></div>
-      </div>
-      <div class="modal-footer border-0">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-        <button type="submit" class="btn btn-warning" id="btnKirimPembayaran">Kirim</button>
-      </div>
+  <!-- MAIN -->
+  <main class="main-content p-4">
+    <div class="text-center mb-4">
+      <h2 class="fw-bold">Status Pembayaran Anda</h2>
+      <p class="text-muted">Lihat rincian pembayaran iuran dan tagihan Anda berdasarkan bulan dan tahun.</p>
     </div>
-  </div>
-</div>
-
-<main class="main-content p-4">
-  <div class="text-center mb-4">
-    <h2 class="fw-bold">Status Pembayaran Anda</h2>
-    <p class="text-muted">Lihat rincian pembayaran iuran dan tagihan Anda.</p>
-  </div>
 
   <!-- FILTER -->
   <div class="filter-box mb-4">
@@ -152,9 +119,9 @@ $tahun_result = mysqli_query($koneksi, $tahun_query);
           <label class="form-label fw-semibold">Jenis Iuran:</label>
           <select class="form-select" id="filterJenis">
             <option value="">Semua</option>
-            <option>Iuran Kas</option>
-            <option>Iuran Keamanan</option>
-            <option>Iuran Kebersihan</option>
+            <option>Kas</option>
+            <option>Keamanan</option>
+            <option>Kebersihan</option>
           </select>
         </div>
       </div>
@@ -187,27 +154,120 @@ $tahun_result = mysqli_query($koneksi, $tahun_query);
           <td><?= $row['tahun_pembayaran'] ?></td>
           <td>Rp<?= number_format($row['nominal_pembayaran'], 0, ',', '.') ?></td>
           <td>
-            <?php if(strtolower($row['status_pembayaran']) == 'lunas'): ?>
-              <span class="badge-lunas">Lunas</span>
-            <?php else: ?>
-              <span class="badge-belum">Belum Lunas</span>
-            <?php endif; ?>
+            <?php 
+    $status = strtolower($row['status_pembayaran']);
+    if($status == 'lunas'):
+?>
+    <span class="badge-lunas">Lunas</span>
+<?php elseif($status == 'menunggu'): ?>
+    <span class="badge-belum">Menunggu</span>
+<?php else: ?>
+    <span class="badge-belum">Belum Lunas</span>
+<?php endif; ?>
+
           </td>
           <td>
             <?php if(strtolower($row['status_pembayaran']) != 'lunas'): ?>
-              <button class="btn btn-warning btn-sm btn-bayar"
-                      data-jenis="<?= htmlspecialchars($row['jenis_pembayaran']) ?>"
-                      data-bulan="<?= htmlspecialchars($row['bulan_pembayaran']) ?>"
-                      data-tahun="<?= $row['tahun_pembayaran'] ?>"
-                      data-nominal="Rp<?= number_format($row['nominal_pembayaran'], 0, ',', '.') ?>"
-                      data-bs-toggle="modal" data-bs-target="#modalPembayaran">
-                Bayar 
-              </button>
+              <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#modalPembayaran<?= $row['id_pembayaran'] ?>">Bayar</button>
+
             <?php else: ?>
               -
             <?php endif; ?>
           </td>
         </tr>
+
+        <?php if(strtolower($row['status_pembayaran']) != 'lunas'): ?>
+          <div class="modal fade" id="modalPembayaran<?= $row['id_pembayaran'] ?>" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+              <div class="modal-content p-3 rounded-4 border-0 shadow-lg">
+
+                <div class="modal-header border-0">
+                  <h5 class="modal-title fw-bold">
+                    Pembayaran Iuran RT/RW
+                  </h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+
+                  <!-- Judul iuran -->
+                  <h5 class="text-center fw-bold mb-4">
+                    <?= htmlspecialchars($row['jenis_pembayaran']) ?> – 
+                    <?= htmlspecialchars($row['bulan_pembayaran']) ?> 
+                    <?= htmlspecialchars($row['tahun_pembayaran']) ?>
+                    (Rp<?= number_format($row['nominal_pembayaran'],0,',','.') ?>)
+                  </h5>
+
+                  <!-- Jenis Iuran -->
+                  <div class="mb-3">
+                    <label class="form-label fw-semibold">1. Jenis Iuran</label>
+                    <input type="text" class="form-control" value="<?= htmlspecialchars($row['jenis_pembayaran']) ?>" readonly>
+                  </div>
+
+                  <!-- Metode Pembayaran -->
+                  <div class="mb-3">
+                    <label class="form-label fw-semibold">2. Metode Pembayaran</label>
+                    <div class="d-grid gap-2">
+                    <button class="btn btn-outline-secondary metode-btn" data-metode="bank">
+              <i class="fa-solid fa-building-columns me-2"></i>Transfer Bank
+          </button>
+
+          <button class="btn btn-outline-secondary metode-btn" data-metode="tunai">
+              <i class="fa-solid fa-money-bill-wave me-2"></i>Uang Tunai
+          </button>
+
+                    </div>
+                  </div>
+
+                  <!-- Transfer Bank -->
+                <div class="info-metode-bank" id="bank<?= $row['id_pembayaran'] ?>">
+              <div class="card border-0 shadow-sm rounded-4 mb-3 p-3">
+                  <p class="fw-semibold mb-2">
+                      <i class="fa-solid fa-building-columns me-2 text-primary"></i>
+                      Informasi Transfer Bank:
+                  </p>
+                  <p class="mb-1">Bank: <strong>BCA</strong></p>
+                  <p class="mb-1">No. Rekening: <strong>1234567890</strong></p>
+                  <p class="mb-0">Atas Nama: <strong>Bendahara RT</strong></p>
+              </div>
+          </div>
+
+
+                  <!-- Info Tunai (card kotak) -->
+                <div class="info-metode-tunai d-none" id="tunai<?= $row['id_pembayaran'] ?>">
+              <div class="card border-0 shadow-sm rounded-4 mb-3 p-3">
+                  <p class="fw-semibold mb-2">
+                      <i class="fa-solid fa-hand-holding-dollar me-2 text-success"></i>
+                      Informasi Pembayaran Tunai:
+                  </p>
+                  <p class="mb-1">Alamat Bendahara: <strong>Jl. Melati No. 12</strong></p>
+                  <p class="mb-1">Jam: <strong>08.00–21.00</strong></p>
+                  <p class="mb-0">HP: <strong>0812-3456-7891</strong></p>
+              </div>
+          </div>
+
+
+                  <!-- Form Upload -->
+                  <form action="aksi/upload_bukti.php" method="post" enctype="multipart/form-data">
+                    <input type="hidden" name="id_pembayaran" value="<?= $row['id_pembayaran'] ?>">
+
+                    <div class="mb-3">
+                      <label class="form-label fw-semibold">Upload Bukti Pembayaran</label>
+                      <input type="file" name="bukti" class="form-control" accept=".jpg,.png,.jpeg" required>
+                    </div>
+
+                    <div class="modal-footer border-0">
+                      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                      <button type="submit" class="btn btn-warning">Kirim</button>
+                    </div>
+                  </form>
+
+                </div>
+              </div>
+            </div>
+          </div>
+          <?php endif; ?>
+
         <?php endwhile; ?>
       </tbody>
     </table>
@@ -219,99 +279,29 @@ $tahun_result = mysqli_query($koneksi, $tahun_query);
 // Filter
 document.querySelectorAll('#filterTahun, #filterBulan, #filterStatus, #filterJenis').forEach(el => {
   el.addEventListener('change', () => {
-    const tahun = document.getElementById('filterTahun').value;
-    const bulan = document.getElementById('filterBulan').value;
-    const status = document.getElementById('filterStatus').value;
-    const jenis = document.getElementById('filterJenis').value;
+    const tahunFilter = document.getElementById('filterTahun').value.trim();
+    const bulanFilter = document.getElementById('filterBulan').value.trim().toLowerCase();
+    const statusFilter = document.getElementById('filterStatus').value.trim().toLowerCase();
+    const jenisFilter = document.getElementById('filterJenis').value.trim().toLowerCase();
 
     document.querySelectorAll('#statusTableBody tr').forEach(row => {
-      const rTahun = row.cells[3].textContent;
-      const rBulan = row.cells[2].textContent.trim();
-      const rStatus = row.cells[5].querySelector('span').textContent.trim();
-      const rJenis = row.cells[1].textContent.trim();
+      const rTahun = row.cells[3].textContent.trim();
+      const rBulan = row.cells[2].textContent.trim().toLowerCase();
+      const rStatus = row.cells[5].querySelector('span').textContent.trim().toLowerCase();
+      const rJenis = row.cells[1].textContent.trim().toLowerCase();
 
-      const show = (!tahun || rTahun == tahun) &&
-                   (!bulan || rBulan == bulan) &&
-                   (!status || rStatus == status) &&
-                   (!jenis || rJenis == jenis);
+      const show = (!tahunFilter || rTahun === tahunFilter) &&
+                   (!bulanFilter || rBulan === bulanFilter) &&
+                   (!statusFilter || rStatus === statusFilter) &&
+                   (!jenisFilter || rJenis === jenisFilter);
 
       row.style.display = show ? '' : 'none';
     });
   });
 });
 
-// Tombol Bayar
-document.querySelectorAll('.btn-bayar').forEach(btn => {
-  btn.addEventListener('click', function() {
-    const jenis = this.dataset.jenis;
-    const bulan = this.dataset.bulan;
-    const tahun = this.dataset.tahun;
-    const nominal = this.dataset.nominal;
 
-    document.querySelector('.modal-summary').innerHTML = `<strong>${jenis}</strong> - ${bulan} ${tahun} (${nominal})`;
-    document.getElementById('jenisIuran').value = jenis;
 
-    new bootstrap.Modal(document.getElementById('modalPembayaran')).show();
-  });
-});
-
-// Metode Pembayaran
-document.addEventListener('DOMContentLoaded', () => {
-  const metodeBtns = document.querySelectorAll('.metode-btn');
-  const infoArea = document.getElementById('infoArea');
-  const btnKirim = document.getElementById('btnKirimPembayaran');
-
-  metodeBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
-      metodeBtns.forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-
-      if (btn.dataset.metode === 'Transfer Bank') {
-        infoArea.innerHTML = `
-          <div class="border rounded-3 p-3 mb-3 bg-light">
-            <p class="fw-bold mb-2">Informasi Transfer:</p>
-            <p><strong>Bank:</strong> BCA</p>
-            <p><strong>No. Rek:</strong> 1234567890</p>
-            <p><strong>a.n.:</strong> Bendahara RT</p>
-          </div>
-          <div class="mb-3">
-            <label class="form-label fw-bold">Upload Bukti</label>
-            <input type="file" class="form-control" id="buktiPembayaran" accept=".jpg,.jpeg,.png">
-            <small class="text-muted">Max 5MB</small>
-          </div>`;
-        btnKirim.textContent = 'Kirim';
-      } else {
-        infoArea.innerHTML = `
-          <div class="border rounded-3 p-3 mb-3 bg-light">
-            <p class="fw-bold mb-2">Pembayaran Tunai</p>
-            <p>Jl. Melati No. 12 RT 01/RW 03</p>
-            <p>Jam: 08.00–21.00</p>
-            <p>HP: 0812-3456-7891</p>
-          </div>`;
-        btnKirim.textContent = 'Selesai';
-      }
-    });
-  });
-  metodeBtns[0].click();
-});
-
-// Kirim / Selesai
-document.getElementById('btnKirimPembayaran').addEventListener('click', () => {
-  const jenis = document.getElementById('jenisIuran').value;
-  const metode = document.querySelector('.metode-btn.active').dataset.metode;
-
-  if (!jenis) return alert('Pilih jenis iuran dulu!');
-
-  if (metode === 'Transfer Bank') {
-    const file = document.getElementById('buktiPembayaran');
-    if (!file || !file.files.length) return alert('Upload bukti transfer dulu!');
-    alert(`Bukti pembayaran ${jenis} berhasil dikirim!`);
-  } else {
-    alert(`Silakan bayar tunai ${jenis} ke bendahara.`);
-  }
-
-  bootstrap.Modal.getInstance(document.getElementById('modalPembayaran')).hide();
-});
 
 // Sidebar Mobile
 document.getElementById('menuToggle').addEventListener('click', () => {
@@ -322,6 +312,33 @@ document.getElementById('overlay').addEventListener('click', () => {
   document.getElementById('sidebar').classList.remove('show');
   document.getElementById('overlay').classList.remove('active');
 });
+
+
+document.querySelectorAll('.metode-btn').forEach(btn => {
+    btn.addEventListener('click', function () {
+
+        const modal = this.closest('.modal');  
+        const id = modal.id.replace('modalPembayaran', '');
+
+        // tombol
+        modal.querySelectorAll('.metode-btn').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+
+        // info
+        const bankBox = modal.querySelector('#bank' + id);
+        const tunaiBox = modal.querySelector('#tunai' + id);
+
+        if (this.dataset.metode === "bank") {
+            bankBox.classList.remove('d-none');
+            tunaiBox.classList.add('d-none');
+        } else {
+            tunaiBox.classList.remove('d-none');
+            bankBox.classList.add('d-none');
+        }
+    });
+});
+
+
 </script>
 </body>
 </html>
