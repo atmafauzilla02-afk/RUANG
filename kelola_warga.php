@@ -389,7 +389,7 @@ if(isset($_GET['edit'])){
             <input type="text" name="alamat" class="form-control mb-2" required value="<?= $editAlamat ?>">
 
             <label for="no_telp" class="form-label">No Telepon</label>
-            <input type="text" name="no_telp" class="form-control mb-3" required value="<?= $editTelp ?>">
+            <input type="number" name="no_telp" class="form-control mb-3" required value="<?= $editTelp ?>">
 
             <button type="submit" class="btn btn-success w-100 fw-semibold">
                 <?= $editId ? "Update" : "Simpan" ?>
@@ -422,7 +422,7 @@ if(isset($_GET['edit'])){
             <input type="text" id="alamat" name="alamat" class="form-control mb-2" required />
 
             <label for="no_telp" class="form-label">No Telepon</label>
-            <input type="text" id="no_telp" name="no_telp" class="form-control mb-3" required />
+            <input type="number" id="no_telp" name="no_telp" class="form-control mb-3" required />
 
             <button type="submit" class="btn btn-success w-100 fw-semibold">Simpan</button>
           </form>
