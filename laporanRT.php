@@ -212,69 +212,61 @@
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <script>
-    const laporan = [];
-    const bulanList = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
-    [2024, 2025].forEach(tahun => {
-      bulanList.forEach(bulan => {
-        laporan.push({
-          bulan: bulan + " " + tahun,
-          file: `Laporan_${bulan}_${tahun}.pdf`,
-          path: `./assets/laporan/Laporan_${bulan}_${tahun}.pdf`
+  
+    async function renderLaporan() {
+    const tahun = document.getElementById('filterTahun').value;
+    const bulan = document.getElementById('filterBulan').value;
+
+    const params = new URLSearchParams();
+    if (tahun) params.append('tahun', tahun);
+    if (bulan) params.append('bulan', bulan);
+
+    try {
+        const res = await fetch(`./aksi/get_laporan.php?${params}`);
+        if (!res.ok) throw new Error('Gagal memuat laporan');
+        const data = await res.json();
+
+        const container = document.getElementById('daftarLaporan');
+        container.innerHTML = '';
+
+        if (!Array.isArray(data) || data.length === 0) {
+            container.innerHTML = `<div class="text-center text-muted py-4">Belum ada laporan untuk periode ini.</div>`;
+            return;
+        }
+
+        data.forEach(item => {
+            // Ubah path dari ../uploads/laporan jadi ./uploads/laporan (bisa dibaca browser)
+            const fileUrl = item.path.replace('../', './');
+            const safePath = fileUrl.replace(/ /g, '%20');
+
+            container.innerHTML += `
+                <div class="list-group-item d-flex justify-content-between align-items-center mb-2 flex-wrap">
+                    <div>
+                        <strong>Laporan Bulan ${item.bulan_tahun}</strong><br>
+                        <small class="text-muted">Digenerate otomatis • ${item.file}</small>
+                    </div>
+                    <div class="d-flex align-items-center gap-2 mt-2 mt-sm-0">
+                        <button class="btn btn-warning btn-sm fw-semibold" onclick="lihatLaporan('${safePath}', '${item.bulan_tahun}')">
+                            <i class="fa-solid fa-eye me-1"></i> Lihat
+                        </button>
+                        <a href="${safePath}" download="${item.file}" class="btn btn-sm btn-success">
+                            <i class="fa-solid fa-download"></i> Unduh
+                        </a>
+                    </div>
+                </div>`;
         });
-      });
-    });
 
-    function renderLaporan() {
-      const container = document.getElementById("daftarLaporan");
-      const tahunFilter = document.getElementById("filterTahun").value;
-      const bulanFilter = document.getElementById("filterBulan").value;
-
-      container.innerHTML = "";
-
-      const filtered = laporan.filter(l => {
-        const [bulan, tahun] = l.bulan.split(" ");
-        return (!tahunFilter || tahun === tahunFilter) && (!bulanFilter || bulan === bulanFilter);
-      });
-
-      if (filtered.length === 0) {
-        container.innerHTML = `<div class="text-center text-muted py-3">Tidak ada laporan untuk filter ini.</div>`;
-        return;
-      }
-
-      filtered.forEach((item, index) => {
-        container.innerHTML += `
-          <div class="list-group-item d-flex justify-content-between align-items-center mb-2 flex-wrap">
-            <div>
-              <strong>Laporan Bulan ${item.bulan}</strong><br>
-              <small class="text-muted">${item.file}</small>
-            </div>
-            <div class="d-flex align-items-center gap-2 mt-2 mt-sm-0">
-              <button class="btn btn-warning btn-sm fw-semibold" onclick="lihatLaporan(${index})">
-                <i class="fa-solid fa-eye me-1"></i> Lihat
-              </button>
-              <button class="btn btn-sm btn-outline-success" onclick="unduhLaporan(${index})">
-                <i class="fa-solid fa-download"></i> Unduh
-              </button>
-            </div>
-          </div>`;
-      });
+    } catch (err) {
+        console.error(err);
+        document.getElementById('daftarLaporan').innerHTML = 
+            `<div class="text-center text-danger py-4">Gagal memuat laporan. Silakan coba lagi.</div>`;
     }
+  } 
 
-    function lihatLaporan(index) {
-      const laporanItem = laporan[index];
-      document.getElementById("pdfViewer").src = laporanItem.path;
-      document.getElementById("pdfTitle").innerText = `Laporan Bulan ${laporanItem.bulan}`;
-      new bootstrap.Modal(document.getElementById("lihatModal")).show();
-    }
-
-    function unduhLaporan(index) {
-      const laporanItem = laporan[index];
-      const link = document.createElement("a");
-      link.href = laporanItem.path;
-      link.download = laporanItem.file;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+    function lihatLaporan(path, judul) {
+    document.getElementById('pdfViewer').src = path + "?v=" + Date.now();
+    document.getElementById('pdfTitle').innerText = `Laporan Bulan ${judul}`;
+    new bootstrap.Modal(document.getElementById('lihatModal')).show();
     }
 
     document.getElementById("filterTahun").addEventListener("change", renderLaporan);
@@ -302,7 +294,10 @@
       }
     }
 
-    renderLaporan();
+  renderLaporan();
+
+  document.getElementById('filterTahun').addEventListener('change', renderLaporan);
+  document.getElementById('filterBulan').addEventListener('change', renderLaporan);
   </script>
 </body>
 </html>

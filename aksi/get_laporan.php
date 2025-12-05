@@ -1,55 +1,72 @@
 <?php
-ob_clean();
+// aksi/get_laporan.php
 header('Content-Type: application/json');
 
-require_once '../koneksi/koneksi.php';
+require_once '../koneksi/koneksi.php'; // sesuaikan path
 
-if (!$koneksi) {
-    echo json_encode(['error' => 'Koneksi database gagal']);
-    exit;
+$tahun = $_GET['tahun'] ?? '';
+$bulan = $_GET['bulan'] ?? '';
+
+// Validasi input
+$tahun = $tahun === '' ? '' : (int)$tahun;
+$bulan = $bulan === '' ? '' : trim($bulan);
+
+try {
+    $sql = "SELECT 
+                bulan_tahun,
+                nama_file AS file,
+                path_file AS path
+            FROM laporan 
+            WHERE 1=1";
+
+    $params = [];
+    $types = '';
+
+    if ($tahun !== '') {
+        $sql .= " AND tahun = ?";
+        $params[] = $tahun;
+        $types .= 'i';
+    }
+    if ($bulan !== '') {
+        $sql .= " AND bulan_nama = ?";
+        $params[] = $bulan;
+        $types .= 's';
+    }
+
+    // Urutkan dari yang terbaru
+    $sql .= " ORDER BY tahun DESC, bulan_angka DESC";
+
+    $stmt = $koneksi->prepare($sql);
+    if ($params) {
+        $stmt->bind_param($types, ...$params);
+    }
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    $data = [];
+    while ($row = $result->fetch_assoc()) {
+        // Pastikan file masih ada di server (opsional, tapi bagus)
+        if (file_exists($row['path'])) {
+            $data[] = [
+                'bulan_tahun' => $row['bulan_tahun'],
+                'file'        => $row['file'],
+                'path'        => $row['path']
+            ];
+        }
+        // Kalau file fisiknya hilang, tetap tampilkan tapi kasih tanda (opsional)
+        // else {
+        //     $data[] = [
+        //         'bulan_tahun' => $row['bulan_tahun'] . ' (File hilang)',
+        //         'file'        => $row['file'],
+        //         'path'        => '#'
+        //     ];
+        // }
+    }
+
+    echo json_encode($data);
+
+} catch (Exception $e) {
+    http_response_code(500);
+    echo json_encode([]);
 }
-
-$tahun = isset($_GET['tahun']) ? trim($_GET['tahun']) : '';
-$bulan = isset($_GET['bulan']) ? trim($_GET['bulan']) : '';
-
-$sql = "SELECT 
-            bulan_tahun, 
-            tahun,
-            nama_file AS file,
-            path_file AS path
-        FROM laporan";
-
-$where = [];
-
-if ($tahun !== '') {
-    $where[] = "tahun = '" . mysqli_real_escape_string($koneksi, $tahun) . "'";
-}
-if ($bulan !== '') {
-    $where[] = "bulan_tahun = '" . mysqli_real_escape_string($koneksi, $bulan) . "'";
-}
-
-if (!empty($where)) {
-    $sql .= " WHERE " . implode(" AND ", $where);
-}
-
-$sql .= " ORDER BY tahun DESC, bulan_tahun DESC";
-
-$result = mysqli_query($koneksi, $sql);
-
-if (!$result) {
-    echo json_encode(['error' => 'Query error: ' . mysqli_error($koneksi)]);
-    exit;
-}
-
-$data = [];
-while ($row = mysqli_fetch_assoc($result)) {
-    $data[] = [
-        'bulan_tahun' => $row['bulan_tahun'],
-        'file'        => $row['file'],
-        'path'        => $row['path']
-    ];
-}
-
-echo json_encode($data);
-exit;
 ?>

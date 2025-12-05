@@ -7,16 +7,6 @@ $bulanIndo = ['januari','februari','maret','april','mei','juni','juli','agustus'
 $bulan_ini = $bulanIndo[date('n')-1];
 $tahun_ini = date('Y');
 
-if (!isset($_SESSION['id_pengguna']) || $_SESSION['role'] !== 'warga') {
-    header("Location: index.php");
-    exit;
-}
-
-$koneksi = mysqli_connect("localhost", "root", "", "ruang");
-if (!$koneksi) {
-    die("Koneksi gagal: " . mysqli_connect_error());
-}
-
 $bulan_eng = ['january','february','march','april','may','june','july','august','september','october','november','december'];
 $bulan_ini = $bulan_eng[date('n') - 1];
 $tahun_ini = date('Y');
@@ -164,7 +154,7 @@ $pengeluaran_bulan_ini = mysqli_fetch_array(mysqli_query($koneksi,
   <main id="mainContent">
     <header class="d-flex justify-content-between align-items-center mb-4">
       <div>
-          <h3 class="fw-bold mb-0 align-items-center">Selamat datang, Asep Gunawan!</h3>
+          <h3 class="fw-bold mb-0 align-items-center">Selamat datang, <?= htmlspecialchars($_SESSION['nama'] ?? 'Warga') ?>!</h3>
           <p class="text-muted mb-0">Ringkasan keuangan dan iuran</p>
       </div>
 
@@ -190,40 +180,57 @@ $pengeluaran_bulan_ini = mysqli_fetch_array(mysqli_query($koneksi,
 
       <div class="col-md-6">
         <div class="info-card">
-          <div class="d-flex justify-content-between align-items-center">
-            <span>Iuran Tertunggak Bulan Ini</span>
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span>Iuran Tertunggak Tahun Ini</span>
             <i class="fa-solid fa-exclamation-triangle icon text-danger"></i>
           </div>
-          <h4 class="text-danger fw-bold"><?= $tunggakan ?> iuran</h4>
-          <small class="text-muted">Per <?= ucfirst($bulan_ini) ?> <?= $tahun_ini ?></small>
+          
+          <div class="mb-2">
+            <select id="filterTunggakan" class="form-select form-select-sm">
+              <option value="">Semua Bulan</option>
+              <option value="1">Januari</option>
+              <option value="2">Februari</option>
+              <option value="3">Maret</option>
+              <option value="4">April</option>
+              <option value="5">Mei</option>
+              <option value="6">Juni</option>
+              <option value="7">Juli</option>
+              <option value="8">Agustus</option>
+              <option value="9">September</option>
+              <option value="10">Oktober</option>
+              <option value="11">November</option>
+              <option value="12">Desember</option>
+            </select>
+          </div>
+
+          <h4 class="text-danger fw-bold"><span id="jumlahTunggakan"><?= $belum_bayar ?></span> iuran</h4>
+          <small class="text-muted" id="infoTunggakan">
+            <?= $belum_bayar > 0 ? "$belum_bayar iuran belum dibayar tahun $tahun_ini" : "Semua iuran sudah lunas tahun ini!" ?>
+          </small>
         </div>
       </div>
 
       <div class="col-md-6">
         <div class="info-card">
           <div class="d-flex justify-content-between align-items-center">
-            <span>Pemasukan Bulan Ini</span>
+            <span>Pemasukan Tahun Ini</span>
             <i class="fa-solid fa-arrow-trend-up icon text-success"></i>
           </div>
-          <h4 class="text-success">Rp<?= number_format($pemasukan_bulan_ini, 0, ',', '.') ?></h4>
-          <small class="text-muted">Pemasukan bulan September</small>
+          <h4 class="text-success">Rp<?= number_format($masuk, 0, ',', '.') ?></h4>
+          <small class="text-muted">Total iuran lunas tahun <?= $tahun_ini ?></small>
         </div>
       </div>
 
       <div class="col-md-6">
         <div class="info-card">
           <div class="d-flex justify-content-between align-items-center">
-            <span>Pengeluaran Bulan Ini</span>
+            <span>Pengeluaran Tahun Ini</span>
             <i class="fa-solid fa-arrow-trend-down icon text-danger"></i>
           </div>
-          <h4 class="text-danger">Rp<?= number_format($pengeluaran_bulan_ini, 0, ',', '.') ?></h4>
-          <small class="text-muted">Pengeluaran bulan September</small>
+          <h4 class="text-danger">Rp<?= number_format($keluar, 0, ',', '.') ?></h4>
+          <small class="text-muted">Total pengeluaran disetujui tahun <?= $tahun_ini ?></small>
         </div>
       </div>
-    </div>
-      
-   
-
 
 <!-- MODAL NOTIFIKASI -->
 <div class="modal fade" id="notifModal" tabindex="-1" aria-hidden="true">
@@ -389,6 +396,31 @@ setInterval(updateKas, 8000);
     overlay.classList.remove('active');
   });
 </script>
+
+<script>
+document.getElementById('filterTunggakan').addEventListener('change', function() {
+    const bulan = this.value;
+    const id_warga = <?= $_SESSION['id_warga'] ?>;
+    const tahun = <?= date('Y') ?>;
+
+    if (!bulan) {
+        document.getElementById('jumlahTunggakan').textContent = '<?= $belum_bayar ?>';
+        document.getElementById('infoTunggakan').textContent = '<?= $belum_bayar > 0 ? "$belum_bayar iuran belum dibayar tahun ini" : "Semua iuran sudah lunas tahun ini!" ?>';
+        return;
+    }
+
+    fetch(`get_tunggakan.php?id_warga=${id_warga}&bulan=${bulan}&tahun=${tahun}`)
+        .then(res => res.json())
+        .then(data => {
+            document.getElementById('jumlahTunggakan').textContent = data.jumlah;
+            document.getElementById('infoTunggakan').textContent = 
+                data.jumlah > 0 
+                    ? `${data.jumlah} iuran belum dibayar bulan ini` 
+                    : `Semua iuran bulan ini sudah lunas!`;
+        });
+});
+</script>
+
 <script src="./assets/bootstrap-5.3.8-dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/js/all.min.js"></script>
 <!-- <script src="./assets/js/main.js"></script> -->
