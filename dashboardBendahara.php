@@ -120,7 +120,6 @@ $pengeluaran_tahun = mysqli_fetch_array(mysqli_query($koneksi,
         </div>
       </div>
 
-                  <!-- KARTU IURAN TERTUNGGAK (MINIMALIS) -->
       <div class="col-md-6">
         <div class="info-card">
           <div class="d-flex justify-content-between align-items-center mb-3">

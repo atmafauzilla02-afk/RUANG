@@ -269,7 +269,7 @@ if (!isset($_SESSION['id_pengguna'])) {
           <option value="">Semua Bulan</option>
         </select>
       </div>
-      <button class="btn btn-success fw-semibold btn-upload" onclick="generateOtomatis()">
+      <button class="btn btn-success fw-semibold btn-upload" data-bs-toggle="modal" data-bs-target="#generateModal">
         <i class="fa-solid fa-cogs me-1"></i> Generate Laporan Otomatis
       </button>
     </div>
@@ -318,6 +318,56 @@ if (!isset($_SESSION['id_pengguna'])) {
     </div>
   </div>
 
+  <!-- MODAL GENERATE LAPORAN -->
+  <div class="modal fade" id="generateModal" tabindex="-1" aria-labelledby="generateModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 rounded-4">
+        <div class="modal-header border-0">
+          <h5 class="modal-title fw-bold" id="generateModalLabel">
+            <i class="fa-solid fa-cogs text-success"></i> Generate Laporan Otomatis
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="genTahun" class="form-label fw-semibold">Pilih Tahun</label>
+            <select class="form-select" id="genTahun" required>
+              <option value="">-- Pilih Tahun --</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="genBulan" class="form-label fw-semibold">Pilih Bulan</label>
+            <select class="form-select" id="genBulan" required>
+              <option value="">-- Pilih Bulan --</option>
+              <option value="Januari">Januari</option>
+              <option value="Februari">Februari</option>
+              <option value="Maret">Maret</option>
+              <option value="April">April</option>
+              <option value="Mei">Mei</option>
+              <option value="Juni">Juni</option>
+              <option value="Juli">Juli</option>
+              <option value="Agustus">Agustus</option>
+              <option value="September">September</option>
+              <option value="Oktober">Oktober</option>
+              <option value="November">November</option>
+              <option value="Desember">Desember</option>
+            </select>
+          </div>
+          <div class="alert alert-info small p-2" role="alert">
+            <i class="fa-solid fa-info-circle"></i>
+            Laporan akan digenerate otomatis untuk periode yang dipilih.
+          </div>
+        </div>
+        <div class="modal-footer border-0">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+          <button type="button" class="btn btn-success fw-bold" id="btnGenerateLaporan">
+            <i class="fa-solid fa-spinner fa-spin d-none"></i> Generate Sekarang
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- SCRIPT -->
   <script>
 const bulanNama = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
@@ -327,89 +377,143 @@ document.addEventListener('DOMContentLoaded', () => {
   bulanNama.forEach(b => filterBulan.add(new Option(b, b)));
 });
 
-function generateOtomatis() {
-  const bulan = prompt("Masukkan bulan dan tahun\nContoh: Oktober 2025", "");
-  if (!bulan || !/^[A-Za-z]+ \d{4}$/.test(bulan.trim())) {
-    return alert("Format salah! Contoh: Oktober 2025");
+// Isi dropdown tahun otomatis (10 tahun terakhir + tahun ini)
+document.addEventListener('DOMContentLoaded', function() {
+  const tahunSelect = document.getElementById('genTahun');
+  const tahunSekarang = new Date().getFullYear();
+  
+  for (let y = tahunSekarang + 1; y >= tahunSekarang - 10; y--) {
+    const opt = document.createElement('option');
+    opt.value = y;
+    opt.textContent = y;
+    if (y === tahunSekarang) opt.selected = true;
+    tahunSelect.appendChild(opt);
   }
-  const input = bulan.trim();
+});
 
-  if (!confirm(`Generate laporan otomatis untuk "${input}"?\nPDF akan langsung tersimpan dan bisa dilihat warga.`)) return;
+// Event klik tombol Generate di dalam modal
+document.getElementById('btnGenerateLaporan').addEventListener('click', function() {
+  const tahun = document.getElementById('genTahun').value;
+  const bulan = document.getElementById('genBulan').value;
+  
+  if (!tahun || !bulan) {
+    alert('Pilih tahun dan bulan terlebih dahulu!');
+    return;
+  }
+
+  const periode = `${bulan} ${tahun}`;
+
+  if (!confirm(`Generate laporan untuk "${periode}"?`)) {
+    return;
+  }
+
+  const btn = this;
+  const spinner = btn.querySelector('.fa-spinner');
+  btn.disabled = true;
+  spinner.classList.remove('d-none');
 
   const formData = new FormData();
-  formData.append('bulan', input);
+  formData.append('bulan', periode);
 
-  fetch('./aksi/generate_pdf.php', {
+  fetch('./aksi/generate_laporan.php', {
     method: 'POST',
     body: formData
   })
-  .then(r => r.json())
+  .then(r => {
+    if (!r.ok) throw new Error('Server error: ' + r.status);
+    return r.json();
+  })
   .then(res => {
     if (res.success) {
-      alert("Sukses! " + res.message);
-      renderLaporan();
+      alert('Berhasil! ' + res.message);
+      renderLaporan(); // refresh daftar laporan
+      bootstrap.Modal.getInstance(document.getElementById('generateModal')).hide();
     } else {
-      alert("Gagal: " + (res.message || "Unknown error"));
+      alert('Gagal: ' + res.message);
     }
   })
   .catch(err => {
     console.error(err);
-    alert("Error server. Cek console.");
+    alert('Error: Terjadi kesalahan saat generate laporan.');
+  })
+  .finally(() => {
+    btn.disabled = false;
+    spinner.classList.add('d-none');
   });
-}
+});
+</script>
 
+<script>
 async function renderLaporan() {
-  const tahun = document.getElementById('filterTahun').value;
-  const bulan = document.getElementById('filterBulan').value;
+    const tahun = document.getElementById('filterTahun').value;
+    const bulan = document.getElementById('filterBulan').value;
 
-  const params = new URLSearchParams();
-  if (tahun) params.append('tahun', tahun);
-  if (bulan) params.append('bulan', bulan);
+    const params = new URLSearchParams();
+    if (tahun) params.append('tahun', tahun);
+    if (bulan) params.append('bulan', bulan);
 
-  try {
-    const res = await fetch(`./aksi/get_laporan.php?${params}`);
-    const data = await res.json();
+    try {
+        const res = await fetch(`./aksi/get_laporan.php?${params}`);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
 
-    const container = document.getElementById('daftarLaporan');
-    container.innerHTML = '';
+        const container = document.getElementById('daftarLaporan');
+        container.innerHTML = '';
 
-    if (!Array.isArray(data) || data.length === 0) {
-      container.innerHTML = '<p class="text-center text-muted">Belum ada laporan.</p>';
-      return;
+        if (!Array.isArray(data) || data.length === 0) {
+            container.innerHTML = '<p class="text-center text-muted">Belum ada laporan.</p>';
+            return;
+        }
+
+        data.forEach(item => {
+            // Pastikan path benar dan bisa diakses dari browser
+            const fileUrl = item.path.replace('../', './'); // Ubah ../uploads jadi ./uploads
+            const safePath = fileUrl.replace(/ /g, '%20'); // Encode spasi (penting!)
+
+            container.innerHTML += `
+                <div class="list-group-item d-flex justify-content-between align-items-center mb-2">
+                    <div>
+                        <strong>${item.bulan_tahun}</strong><br>
+                        <small class="text-muted">Otomatis digenerate • ${item.file}</small>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <!-- Tombol LIHAT -->
+                        <button class="btn btn-warning btn-sm" 
+                                onclick="lihatLaporan('${safePath}', '${item.bulan_tahun}')">
+                            <i class="fa-solid fa-eye me-1"></i> Lihat
+                        </button>
+                        
+                        <!-- Tombol DOWNLOAD -->
+                        <a href="${safePath}" 
+                           download="${item.file}" 
+                           class="btn btn-success btn-sm" 
+                           title="Download ${item.file}">
+                            <i class="fa-solid fa-download"></i>
+                        </a>
+                    </div>
+                </div>`;
+        });
+    } catch (err) {
+        console.error(err);
+        container.innerHTML = '<p class="text-danger">Gagal memuat data laporan.</p>';
     }
-
-    data.forEach(item => {
-      container.innerHTML += `
-        <div class="list-group-item d-flex justify-content-between align-items-center mb-2">
-          <div>
-            <strong>${item.bulan_tahun}</strong><br>
-            <small class="text-muted">Otomatis digenerate • ${item.file || 'PDF'}</small>
-          </div>
-          <div class="d-flex gap-2">
-            <button class="btn btn-warning btn-sm" onclick="lihatLaporan('${item.path}', '${item.bulan_tahun}')">
-              Lihat
-            </button>
-            <a href="${item.path}" download class="btn btn-success btn-sm">
-              <i class="fa-solid fa-download"></i>
-            </a>
-          </div>
-        </div>`;
-    });
-  } catch (err) {
-    console.error(err);
-    document.getElementById('daftarLaporan').innerHTML = '<p class="text-danger">Gagal memuat data.</p>';
-  }
 }
 
+// Fungsi lihat PDF di modal
 function lihatLaporan(path, judul) {
-  document.getElementById('pdfViewer').src = path + "?v=" + Date.now();
-  document.getElementById('pdfTitle').innerText = `Laporan ${judul}`;
-  new bootstrap.Modal(document.getElementById('lihatModal')).show();
+    const iframe = document.getElementById('pdfViewer');
+    iframe.src = path + "?v=" + Date.now(); // Cache buster
+    document.getElementById('pdfTitle').innerText = `Laporan ${judul}`;
+    
+    const modal = new bootstrap.Modal(document.getElementById('lihatModal'));
+    modal.show();
 }
 
+// Event filter
 document.getElementById('filterTahun').addEventListener('change', renderLaporan);
 document.getElementById('filterBulan').addEventListener('change', renderLaporan);
 
+// Load pertama kali
 renderLaporan();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
