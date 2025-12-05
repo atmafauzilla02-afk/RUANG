@@ -3,7 +3,7 @@ session_start();
 include '../koneksi/koneksi.php';
 
 $id_warga = $_POST['id_warga'];
-$jenis = strtolower(trim($_POST['jenis_kustom']));
+$jenis = strtolower(trim($_POST['jenis']));
 $bulan = $_POST['bulan'];
 $tahun = $_POST['tahun'];
 $nominal = $_POST['nominal'];
