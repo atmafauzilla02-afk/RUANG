@@ -7,11 +7,6 @@ $bulanIndo = ['januari','februari','maret','april','mei','juni','juli','agustus'
 $bulan_ini = $bulanIndo[date('n')-1];
 $tahun_ini = date('Y');
 
-if (!isset($_SESSION['id_pengguna']) || $_SESSION['role'] !== 'warga') {
-    header("Location: index.php");
-    exit;
-}
-
 $bulan_eng = ['january','february','march','april','may','june','july','august','september','october','november','december'];
 $bulan_ini = $bulan_eng[date('n') - 1];
 $tahun_ini = date('Y');
