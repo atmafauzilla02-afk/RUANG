@@ -32,7 +32,7 @@ $pengeluaran_tahun = mysqli_fetch_array(mysqli_query($koneksi,
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard Ketua RT | Ruang</title>
+  <title>Dashboard | Ruang</title>
 
   <!-- Bootstrap & Font -->
   <link href="./assets/bootstrap-5.3.8-dist/css/bootstrap.min.css" rel="stylesheet">
@@ -141,7 +141,6 @@ $pengeluaran_tahun = mysqli_fetch_array(mysqli_query($koneksi,
                 <option value="kas">Kas</option>
                 <option value="keamanan">Keamanan</option>
                 <option value="kebersihan">Kebersihan</option>
-                <option value="lainnya">Lainnya</option>
               </select>
             </div>
           </div>
@@ -174,101 +173,95 @@ $pengeluaran_tahun = mysqli_fetch_array(mysqli_query($koneksi,
         </div>
       </div>
 
-        <!-- GRAFIK -->
-    <div class="chart-card p-4 position-relative bg-white rounded shadow-sm">
+        <!-- GRAFIK TAHUN INI SAJA -->
+    <div class="chart-card p-4 bg-white rounded shadow-sm">
       <h5 class="fw-semibold mb-4 text-center">
-        Grafik Pemasukan & Pengeluaran Tahun <span id="chartYear" class="text-primary"><?= $tahun_filter ?></span>
+        Grafik Pemasukan & Pengeluaran Tahun <span class="text-primary"><?= date('Y') ?></span>
       </h5>
 
-      <!-- Tombol Navigasi Tahun -->
-      <button id="prevYear" class="btn btn-sm btn-outline-secondary position-absolute top-50 start-0 translate-middle-y ms-3 z-3">
-        <i class="fa-solid fa-chevron-left"></i>
-      </button>
-      <button id="nextYear" class="btn btn-sm btn-outline-secondary position-absolute top-50 end-0 translate-middle-y me-3 z-3">
-        <i class="fa-solid fa-chevron-right"></i>
-      </button>
-
-      <!-- Wrapper biar tinggi tetap terjaga -->
-      <div class="position-relative" style="height: 380px;">
+      <div class="position-relative" style="height:380px;">
         <canvas id="chartArea"></canvas>
       </div>
     </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-
 <script>
-// === Variabel Global ===
-let currentYear = <?= date('Y') ?>;
-const ctx = document.getElementById('chartArea').getContext('2d');
-let chart;
+(async function() {
+    const tahun = <?= date('Y') ?>;
+    let chart = null;
 
-// === Fungsi Load Data dari API ===
-async function loadChart(tahun) {
     try {
-        const response = await fetch(`chart_data.php?tahun=${tahun}`);
-        const data = await response.json();
+        const res = await fetch(`chart_data.php?tahun=${tahun}`);
+        const data = await res.json();
 
-        // Update teks tahun
-        document.getElementById('chartYear').textContent = tahun;
+        const totalMasuk = data.pemasukan.reduce((a,b) => a + b, 0);
+        const totalKeluar = data.pengeluaran.reduce((a,b) => a + b, 0);
 
-        // Kalau chart belum dibuat → buat baru, kalau sudah ada → update data
-        if (!chart) {
-            chart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'],
-                    datasets: [
-                        {
-                            label: 'Pemasukan (Juta)',
-                            data: data.pemasukan,
-                            backgroundColor: '#9dd6a4',
-                            borderColor: '#6fbf7a',
-                            borderWidth: 1
-                        },
-                        {
-                            label: 'Pengeluaran (Juta)',
-                            data: data.pengeluaran,
-                            backgroundColor: '#f78b89',
-                            borderColor: '#e74c3c',
-                            borderWidth: 1
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { position: 'bottom' }
-                    },
-                    scales: {
-                        y: { beginAtZero: true }
-                    }
-                }
-            });
-        } else {
-            // Update data saja
-            chart.data.datasets[0].data = data.pemasukan;
-            chart.data.datasets[1].data = data.pengeluaran;
-            chart.update();
+        if (totalMasuk === 0 && totalKeluar === 0) {
+            document.querySelector('.chart-card .position-relative').innerHTML = `
+                <div class="text-center py-5 text-muted">
+                    <i class="fa-solid fa-chart-bar fa-3x mb-3 opacity-50"></i>
+                    <p class="mb-0 fw-medium fs-5">Belum ada data pemasukan atau pengeluaran di tahun ${tahun}</p>
+                </div>`;
+            return;
         }
+
+        const ctx = document.getElementById('chartArea').getContext('2d');
+
+        chart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'],
+                datasets: [
+                    {
+                        label: 'Pemasukan (Rp)',
+                        data: data.pemasukan,
+                        backgroundColor: '#27ae60',
+                        borderColor: '#1e8449',
+                        borderRadius: 6,
+                        borderSkipped: false
+                    },
+                    {
+                        label: 'Pengeluaran (Rp)',
+                        data: data.pengeluaran,
+                        backgroundColor: '#e74c3c',
+                        borderColor: '#c0392b',
+                        borderRadius: 6,
+                        borderSkipped: false
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom' },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => ctx.dataset.label + ': Rp' + ctx.parsed.y.toLocaleString('id-ID')
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { callback: v => 'Rp' + v.toLocaleString('id-ID') },
+                        title: { display: true, text: '' }
+                    },
+                    x: { title: { display: true, text: '' } }
+                }
+            }
+        });
+
     } catch (err) {
-        alert('Gagal memuat grafik: ' + err);
+        console.error('Gagal load grafik:', err);
+        document.querySelector('.chart-card .position-relative').innerHTML = `
+            <div class="text-center py-5 text-danger">
+                <i class="fa-solid fa-triangle-exclamation fa-3x mb-3"></i>
+                <p>Gagal memuat grafik</p>
+            </div>`;
     }
-}
-
-// === Tombol Prev & Next Tahun ===
-document.getElementById('prevYear').addEventListener('click', () => {
-    currentYear--;
-    loadChart(currentYear);
-});
-
-document.getElementById('nextYear').addEventListener('click', () => {
-    currentYear++;
-    loadChart(currentYear);
-});
-
-// === Load pertama kali saat halaman dibuka ===
-loadChart(currentYear);
+})();
 </script>
 
 <script src="./assets/bootstrap-5.3.8-dist/js/bootstrap.bundle.min.js"></script>

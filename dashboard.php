@@ -72,6 +72,32 @@ $pengeluaran_bulan_ini = mysqli_fetch_array(mysqli_query($koneksi,
        AND MONTH(tanggal_pengeluaran) = MONTH(CURDATE())
        AND YEAR(tanggal_pengeluaran) = YEAR(CURDATE())"
 ))[0] ?? 0;
+
+$profile_query = mysqli_query($koneksi, "
+    SELECT 
+        pg.nama, 
+        pg.nik, 
+        pg.no_telp, 
+        pg.alamat 
+    FROM warga w 
+    JOIN pengguna pg ON w.id_pengguna = pg.id_pengguna 
+    WHERE w.id_warga = '{$_SESSION['id_warga']}'
+");
+
+if (!$profile_query) {
+    die("Error query profile: " . mysqli_error($koneksi));
+}
+
+$profile_data = mysqli_fetch_assoc($profile_query);
+
+if (!$profile_data) {
+    $profile_data = [
+        'nama' => $_SESSION['nama'] ?? 'Tidak Diketahui',
+        'nik' => 'Tidak Tersedia',
+        'no_telp' => 'Tidak Tersedia',
+        'alamat' => 'Tidak Tersedia'
+    ];
+}
 ?>
 
 <!DOCTYPE html>
@@ -121,16 +147,88 @@ $pengeluaran_bulan_ini = mysqli_fetch_array(mysqli_query($koneksi,
   width: 80px;         
   display: block;
 }
-  
-  
-  
+
+.notif-item {
+  padding: 16px 20px;
+  border-bottom: 1px solid #e9ecef;
+  transition: background 0.2s;
+}
+
+.notif-item:hover {
+  background-color: #f8f9fa;
+}
+
+.notif-item.unread {
+  background-color: #fff8e1;
+  border-left: 4px solid #f5c83b;
+}
+
+.notif-item:last-child {
+  border-bottom: none;
+}
+
+.notif-title {
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 6px;
+  font-size: 15px;
+}
+
+.notif-content {
+  color: #666;
+  font-size: 14px;
+  line-height: 1.5;
+  margin-bottom: 8px;
+}
+
+.notif-date {
+  color: #999;
+  font-size: 12px;
+}
+
+.notif-badge-unread {
+  display: inline-block;
+  background: #f5c83b;
+  color: #333;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+  margin-left: 8px;
+}
+
+.notif-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: #999;
+}
+
+.notif-empty i {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.3;
+}
+
+.user-profile {
+  transition: transform 0.2s;
+}
+
+.user-profile:hover {
+  transform: scale(1.1);
+}
+
+.input-group .btn-outline-secondary:hover {
+  background-color: #f5c83b;
+  border-color: #f5c83b;
+  color: #fff;
+}
 </style>
 
   <!-- HEADER UNTUK MOBILE -->
-<header class="mobile-header d-lg-none">
-  <button class="btn toggle-btn"><i class="fa-solid fa-bars"></i></button>
-  <img src="assets/img/logo final.png" class="logoMobile"  alt="logo">
-</header>
+  <header class="mobile-header d-lg-none">
+    <button class="btn toggle-btn"><i class="fa-solid fa-bars"></i></button>
+    <img src="assets/img/logo final.png" class="logoMobile"  alt="logo">
+  </header>
 
   <!-- SIDEBAR -->
   <aside class="sidebar" id="sidebar" >
@@ -147,7 +245,7 @@ $pengeluaran_bulan_ini = mysqli_fetch_array(mysqli_query($koneksi,
     </a>
   </aside>
 
-<div class="overlay"></div>
+  <div class="overlay"></div>
 
   <!-- MAIN CONTENT -->
    
@@ -158,10 +256,18 @@ $pengeluaran_bulan_ini = mysqli_fetch_array(mysqli_query($koneksi,
           <p class="text-muted mb-0">Ringkasan keuangan dan iuran</p>
       </div>
 
-      <div class="notif position-relative" id="notifButton" style="cursor: pointer;">
-        <i class="fa-regular fa-bell fa-lg text-dark"></i>
-        <span class="notif-dot position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>
-      </div>
+      <div class="d-flex gap-3 align-items-center">
+        <!-- Tombol Notifikasi -->
+        <div class="notif position-relative" id="notifButton" style="cursor: pointer;">
+          <i class="fa-regular fa-bell fa-lg text-dark"></i>
+          <span class="notif-dot position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle" 
+                id="notifBadge" style="display: none;"></span>
+        </div>
+
+        <!-- Tombol User Profile -->
+        <div class="user-profile position-relative" id="userButton" style="cursor: pointer;" data-bs-toggle="modal" data-bs-target="#profileModal">
+          <i class="fa-regular fa-user fa-lg text-dark"></i>
+        </div>
       </div>
     </header>
 
@@ -232,126 +338,213 @@ $pengeluaran_bulan_ini = mysqli_fetch_array(mysqli_query($koneksi,
         </div>
       </div>
 
-<!-- MODAL NOTIFIKASI -->
-<div class="modal fade" id="notifModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content border-0 rounded-4 shadow-lg">
-      <div class="modal-header border-0 text-white" style="background: linear-gradient(135deg, #f5c83b, #caa43b);">
-        <h5 class="modal-title fw-bold">
-          <i class="fa-solid fa-bell me-2"></i>Notifikasi Iuran
-        </h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <div id="notifList" class="list-group border-0"></div>
-       
-      </div>
-      <div class="modal-footer border-0">
-        <button type="button" class="btn btn-warning text-dark fw-semibold px-4 rounded-3" data-bs-dismiss="modal">
-          Tutup
-        </button>
+    <!-- MODAL NOTIFIKASI -->
+    <div class="modal fade" id="notifModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 rounded-4 shadow-lg">
+          <div class="modal-header border-0 text-white" style="background: linear-gradient(135deg, #f5c83b, #caa43b);">
+            <h5 class="modal-title fw-bold">
+              <i class="fa-solid fa-bell me-2"></i>Notifikasi Iuran
+            </h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body p-0" style="max-height: 500px;">
+            <div id="notifList"></div>
+          </div>
+          <div class="modal-footer border-0">
+            <button type="button" class="btn btn-warning text-dark fw-semibold px-4 rounded-3" data-bs-dismiss="modal">
+              Tutup
+            </button>
+          </div>
+        </div>
       </div>
     </div>
-  </div>
-</div>
 
+    <!-- MODAL PROFILE USER -->
+    <div class="modal fade" id="profileModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 rounded-4 shadow-lg">
+          <div class="modal-header border-0 text-white" style="background: linear-gradient(135deg, #f5c83b, #caa43b);">
+            <h5 class="modal-title fw-bold">
+              <i class="fa-solid fa-user-circle me-2"></i>Profil Pengguna
+            </h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body p-4">
+            
+            <!-- Info Pengguna -->
+            <div class="mb-4">
+              <div class="text-center mb-3">
+                <div class="rounded-circle bg-warning d-inline-flex align-items-center justify-content-center" 
+                    style="width: 80px; height: 80px;">
+                  <i class="fa-solid fa-user fa-3x text-white"></i>
+                </div>
+              </div>
 
-    <!-- GRAFIK -->
-    <div class="chart-card p-4 position-relative bg-white rounded shadow-sm">
+              <table class="table table-borderless">
+                <tr>
+                  <td width="40%" class="text-muted"><i class="fa-solid fa-user me-2"></i>Nama</td>
+                  <td class="fw-semibold">: <?= htmlspecialchars($profile_data['nama'] ?? '-') ?></td>
+                </tr>
+                <tr>
+                  <td class="text-muted"><i class="fa-solid fa-id-card me-2"></i>NIK</td>
+                  <td class="fw-semibold">: <?= htmlspecialchars($profile_data['nik'] ?? '-') ?></td>
+                </tr>
+                <tr>
+                  <td class="text-muted"><i class="fa-solid fa-phone me-2"></i>No. Telepon</td>
+                  <td class="fw-semibold">: <?= htmlspecialchars($profile_data['no_telp'] ?? '-') ?></td>
+                </tr>
+                <tr>
+                  <td class="text-muted"><i class="fa-solid fa-home me-2"></i>Alamat</td>
+                  <td class="fw-semibold">: <?= htmlspecialchars($profile_data['alamat'] ?? '-') ?></td>
+                </tr>
+              </table>
+            </div>
+
+            <hr>
+
+            <!-- Form Ganti Password -->
+            <div>
+              <h6 class="fw-bold mb-3"><i class="fa-solid fa-key me-2"></i>Ganti Password</h6>
+              
+              <form id="formGantiPassword" action="aksi/ganti_password.php" method="POST">
+                
+                <div class="mb-3">
+                  <label class="form-label">Password Lama</label>
+                  <div class="input-group">
+                    <input type="password" name="password_lama" id="passwordLama" class="form-control" required>
+                    <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('passwordLama', this)">
+                      <i class="fa fa-eye"></i>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label">Password Baru</label>
+                  <div class="input-group">
+                    <input type="password" name="password_baru" id="passwordBaru" class="form-control" 
+                          minlength="6" required>
+                    <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('passwordBaru', this)">
+                      <i class="fa fa-eye"></i>
+                    </button>
+                  </div>
+                  <small class="text-muted">Minimal 6 karakter</small>
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label">Konfirmasi Password Baru</label>
+                  <div class="input-group">
+                    <input type="password" name="password_konfirmasi" id="passwordKonfirmasi" class="form-control" 
+                          minlength="6" required>
+                    <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('passwordKonfirmasi', this)">
+                      <i class="fa fa-eye"></i>
+                    </button>
+                  </div>
+                </div>
+
+                <button type="submit" class="btn btn-warning w-100 fw-semibold">
+                  <i class="fa fa-save me-2"></i>Simpan Password Baru
+                </button>
+
+              </form>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+                    <!-- GRAFIK TAHUN INI SAJA (TANPA TOMBOL NAVIGASI) -->
+    <div class="chart-card p-4 bg-white rounded shadow-sm">
       <h5 class="fw-semibold mb-4 text-center">
-        Grafik Pemasukan & Pengeluaran Tahun <span id="chartYear" class="text-primary">2025</span>
+        Grafik Pemasukan & Pengeluaran Tahun <span class="text-primary"><?= date('Y') ?></span>
       </h5>
 
-      <!-- Tombol Navigasi Tahun -->
-      <button id="prevYear" class="btn btn-sm btn-outline-secondary position-absolute top-50 start-0 translate-middle-y ms-3 z-3">
-        <i class="fa-solid fa-chevron-left"></i>
-      </button>
-      <button id="nextYear" class="btn btn-sm btn-outline-secondary position-absolute top-50 end-0 translate-middle-y me-3 z-3">
-        <i class="fa-solid fa-chevron-right"></i>
-      </button>
-
-      <!-- Wrapper biar tinggi tetap terjaga -->
-      <div class="position-relative" style="height: 380px;">
+      <div class="position-relative" style="height:380px;">
         <canvas id="chartArea"></canvas>
       </div>
     </div>
-</div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-
 <script>
-// === Variabel Global ===
-let currentYear = new Date().getFullYear();
-const ctx = document.getElementById('chartArea').getContext('2d');
-let chart;
+(async function() {
+    const tahun = <?= date('Y') ?>;
+    let chart = null;
 
-// === Fungsi Load Data dari API ===
-async function loadChart(tahun) {
     try {
-        const response = await fetch(`chart_data.php?tahun=${tahun}`);
-        const data = await response.json();
+        const res = await fetch(`chart_data.php?tahun=${tahun}`);
+        const data = await res.json();
 
-        // Update teks tahun
-        document.getElementById('chartYear').textContent = tahun;
+        const totalMasuk = data.pemasukan.reduce((a,b) => a + b, 0);
+        const totalKeluar = data.pengeluaran.reduce((a,b) => a + b, 0);
 
-        // Kalau chart belum dibuat → buat baru, kalau sudah ada → update data
-        if (!chart) {
-            chart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'],
-                    datasets: [
-                        {
-                            label: 'Pemasukan (Juta)',
-                            data: data.pemasukan,
-                            backgroundColor: '#9dd6a4',
-                            borderColor: '#6fbf7a',
-                            borderWidth: 1
-                        },
-                        {
-                            label: 'Pengeluaran (Juta)',
-                            data: data.pengeluaran,
-                            backgroundColor: '#f78b89',
-                            borderColor: '#e74c3c',
-                            borderWidth: 1
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { position: 'bottom' }
-                    },
-                    scales: {
-                        y: { beginAtZero: true }
-                    }
-                }
-            });
-        } else {
-            // Update data saja
-            chart.data.datasets[0].data = data.pemasukan;
-            chart.data.datasets[1].data = data.pengeluaran;
-            chart.update();
+        // Jika tidak ada data tahun ini
+        if (totalMasuk === 0 && totalKeluar === 0) {
+            document.querySelector('.chart-card .position-relative').innerHTML = `
+                <div class="text-center py-5 text-muted">
+                    <i class="fa-solid fa-chart-bar fa-3x mb-3 opacity-50"></i>
+                    <p class="mb-0 fw-medium fs-5">Belum ada data pemasukan atau pengeluaran di tahun ${tahun}</p>
+                </div>`;
+            return;
         }
+
+        // Ada data → tampilkan grafik batang
+        const ctx = document.getElementById('chartArea').getContext('2d');
+
+        chart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'],
+                datasets: [
+                    {
+                        label: 'Pemasukan (Rp)',
+                        data: data.pemasukan,
+                        backgroundColor: '#27ae60',
+                        borderColor: '#1e8449',
+                        borderRadius: 6,
+                        borderSkipped: false
+                    },
+                    {
+                        label: 'Pengeluaran (Rp)',
+                        data: data.pengeluaran,
+                        backgroundColor: '#e74c3c',
+                        borderColor: '#c0392b',
+                        borderRadius: 6,
+                        borderSkipped: false
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom' },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => ctx.dataset.label + ': Rp' + ctx.parsed.y.toLocaleString('id-ID')
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { callback: v => 'Rp' + v.toLocaleString('id-ID') },
+                        title: { display: true, text: '' }
+                    },
+                    x: { title: { display: true, text: '' } }
+                }
+            }
+        });
+
     } catch (err) {
-        alert('Gagal memuat grafik: ' + err);
+        console.error('Gagal load grafik:', err);
+        document.querySelector('.chart-card .position-relative').innerHTML = `
+            <div class="text-center py-5 text-danger">
+                <i class="fa-solid fa-triangle-exclamation fa-3x mb-3"></i>
+                <p>Gagal memuat grafik</p>
+            </div>`;
     }
-}
-
-// === Tombol Prev & Next Tahun ===
-document.getElementById('prevYear').addEventListener('click', () => {
-    currentYear--;
-    loadChart(currentYear);
-});
-
-document.getElementById('nextYear').addEventListener('click', () => {
-    currentYear++;
-    loadChart(currentYear);
-});
-
-// === Load pertama kali saat halaman dibuka ===
-loadChart(currentYear);
+})();
 </script>
 
 <script>
@@ -418,6 +611,176 @@ document.getElementById('filterTunggakan').addEventListener('change', function()
                     ? `${data.jumlah} iuran belum dibayar bulan ini` 
                     : `Semua iuran bulan ini sudah lunas!`;
         });
+});
+</script>
+
+<script>
+let notifModal;
+
+document.addEventListener('DOMContentLoaded', function() {
+  console.log('🔔 Initializing notification system...');
+  
+  notifModal = new bootstrap.Modal(document.getElementById('notifModal'));
+  
+  loadNotifikasi();
+  
+  setInterval(loadNotifikasi, 30000);
+  
+  document.getElementById('notifButton').addEventListener('click', function() {
+    console.log('🔔 Notification button clicked');
+    notifModal.show();
+    markAllAsRead();
+  });
+});
+
+// Fungsi untuk load notifikasi
+function loadNotifikasi() {
+  console.log('📡 Fetching notifications...');
+  
+  fetch('aksi/get_notifikasi.php')
+    .then(res => {
+      console.log('📡 Response status:', res.status);
+      if (!res.ok) {
+        throw new Error('HTTP error! status: ' + res.status);
+      }
+      return res.json();
+    })
+    .then(data => {
+      console.log('✅ Data received:', data);
+      
+      const notifList = document.getElementById('notifList');
+      const notifBadge = document.getElementById('notifBadge');
+      
+      if (!notifList) {
+        console.error('❌ Element notifList not found!');
+        return;
+      }
+      
+      if (data.belum_dibaca > 0) {
+        notifBadge.style.display = 'block';
+        console.log('🔴 Badge shown:', data.belum_dibaca, 'unread');
+      } else {
+        notifBadge.style.display = 'none';
+        console.log('⚪ Badge hidden');
+      }
+      
+      if (!data.notifikasi || data.notifikasi.length === 0) {
+        notifList.innerHTML = `
+          <div class="notif-empty">
+            <i class="fa-regular fa-bell-slash"></i>
+            <p class="mb-0">Belum ada notifikasi</p>
+          </div>
+        `;
+        console.log('📭 No notifications');
+      } else {
+        console.log('📬', data.notifikasi.length, 'notifications found');
+        
+        notifList.innerHTML = data.notifikasi.map(notif => {
+          const unreadClass = notif.dibaca == 0 ? 'unread' : '';
+          const unreadBadge = notif.dibaca == 0 ? '<span class="notif-badge-unread">BARU</span>' : '';
+          const tanggal = new Date(notif.tanggal).toLocaleString('id-ID', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+          
+          return `
+            <div class="notif-item ${unreadClass}">
+              <div class="notif-title">
+                ${escapeHtml(notif.judul)}
+                ${unreadBadge}
+              </div>
+              <div class="notif-content">
+                ${escapeHtml(notif.isi).replace(/\n/g, '<br>')}
+              </div>
+              <div class="notif-date">
+                <i class="fa-regular fa-clock me-1"></i>${tanggal}
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+    })
+    .catch(err => {
+      console.error('❌ Error loading notifications:', err);
+      const notifList = document.getElementById('notifList');
+      if (notifList) {
+        notifList.innerHTML = `
+          <div class="notif-empty">
+            <i class="fa-solid fa-exclamation-triangle text-danger"></i>
+            <p class="mb-0">Gagal memuat notifikasi</p>
+            <small class="text-danger">${err.message}</small>
+          </div>
+        `;
+      }
+    });
+}
+
+// Fungsi untuk tandai semua notifikasi sebagai dibaca
+function markAllAsRead() {
+  console.log('✔️ Marking all as read...');
+  
+  fetch('aksi/notifikasi_dibaca.php')  // ✅ INI SUDAH BENAR
+    .then(res => res.json())
+    .then(data => {
+      console.log('✔️ Mark as read response:', data);
+      if (data.success) {
+        console.log('✔️ Successfully marked as read');
+        setTimeout(() => loadNotifikasi(), 500);
+      }
+    })
+    .catch(err => console.error('❌ Failed to mark as read:', err));
+}
+
+// Fungsi helper untuk escape HTML (mencegah XSS)
+function escapeHtml(text) {
+  if (!text) return '';
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+</script>
+
+<script>
+// Toggle show/hide password
+function togglePassword(inputId, button) {
+  const input = document.getElementById(inputId);
+  const icon = button.querySelector('i');
+  
+  if (input.type === 'password') {
+    input.type = 'text';
+    icon.classList.remove('fa-eye');
+    icon.classList.add('fa-eye-slash');
+  } else {
+    input.type = 'password';
+    icon.classList.remove('fa-eye-slash');
+    icon.classList.add('fa-eye');
+  }
+}
+
+// Validasi form ganti password
+document.getElementById('formGantiPassword')?.addEventListener('submit', function(e) {
+  e.preventDefault();
+  
+  const passwordBaru = document.getElementById('passwordBaru').value;
+  const passwordKonfirmasi = document.getElementById('passwordKonfirmasi').value;
+  
+  if (passwordBaru !== passwordKonfirmasi) {
+    alert('❌ Password baru dan konfirmasi tidak sama!');
+    return false;
+  }
+  
+  if (passwordBaru.length < 6) {
+    alert('❌ Password minimal 6 karakter!');
+    return false;
+  }
+  
+  // Konfirmasi sebelum submit
+  if (confirm('Yakin ingin mengganti password?')) {
+    this.submit();
+  }
 });
 </script>
 

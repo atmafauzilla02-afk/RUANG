@@ -18,6 +18,7 @@ $keterangan = trim($keterangan);
 $nominal    = trim($nominal);
 $kategori   = trim($kategori);
 
+// Validasi input
 if ($judul === '' || $keterangan === '' || $nominal === '' || $kategori === '') {
     echo json_encode(['status' => 'error', 'message' => 'Semua field wajib diisi']);
     ob_end_flush();
@@ -38,7 +39,6 @@ if (!file_exists($koneksi_path)) {
 
 require_once $koneksi_path;
 
-// Cek apakah $conn ada dan koneksi berhasil
 if (!isset($koneksi) || $koneksi->connect_error) {
     echo json_encode([
         'status'  => 'error', 
@@ -48,14 +48,53 @@ if (!isset($koneksi) || $koneksi->connect_error) {
     exit;
 }
 
-// === INSERT KE DATABASE ===
+$sql_pemasukan = "SELECT COALESCE(SUM(nominal_pembayaran), 0) as total_pemasukan 
+                  FROM pembayaran 
+                  WHERE status_pembayaran = 'lunas'";
+
+$result_pemasukan = $koneksi->query($sql_pemasukan);
+$total_pemasukan = 0;
+if ($result_pemasukan && $row = $result_pemasukan->fetch_assoc()) {
+    $total_pemasukan = (float)$row['total_pemasukan'];
+}
+
+$sql_pengeluaran = "SELECT COALESCE(SUM(nominal_pengeluaran), 0) as total_pengeluaran 
+                    FROM pengeluaran 
+                    WHERE status_persetujuan = 'Disetujui'";
+
+$result_pengeluaran = $koneksi->query($sql_pengeluaran);
+$total_pengeluaran = 0;
+if ($result_pengeluaran && $row = $result_pengeluaran->fetch_assoc()) {
+    $total_pengeluaran = (float)$row['total_pengeluaran'];
+}
+
+$saldo_kas = $total_pemasukan - $total_pengeluaran;
+
+error_log("SALDO DEBUG: Pemasukan = $total_pemasukan | Pengeluaran = $total_pengeluaran | Saldo = $saldo_kas");
+
+if ($nominal > $saldo_kas) {
+    echo json_encode([
+        'status' => 'error', 
+        'message' => 'Saldo kas tidak mencukupi! Saldo saat ini: Rp' . number_format($saldo_kas, 0, ',', '.') .
+                     ' (Pemasukan: Rp' . number_format($total_pemasukan, 0, ',', '.') . 
+                     ', Pengeluaran: Rp' . number_format($total_pengeluaran, 0, ',', '.') . ')'
+    ]);
+    $koneksi->close();
+    ob_end_flush();
+    exit;
+}
+
+// === INSERT KE DATABASE (jika saldo mencukupi) ===
 $sql = "INSERT INTO pengeluaran (nama_pengeluaran, keterangan_pengeluaran, nominal_pengeluaran, jenis_pengeluaran, status_persetujuan, tanggal_pengeluaran) 
         VALUES (?, ?, ?, ?, 'Menunggu', CURDATE())";
 
 if ($stmt = $koneksi->prepare($sql)) {
     $stmt->bind_param("ssis", $judul, $keterangan, $nominal, $kategori);
     if ($stmt->execute()) {
-        echo json_encode(['status' => 'success', 'message' => 'Pengajuan berhasil dikirim']);
+        echo json_encode([
+            'status' => 'success', 
+            'message' => 'Pengajuan berhasil dikirim. Sisa saldo: Rp' . number_format($saldo_kas - $nominal, 0, ',', '.')
+        ]);
     } else {
         echo json_encode(['status' => 'error', 'message' => 'Gagal insert: ' . $stmt->error]);
     }

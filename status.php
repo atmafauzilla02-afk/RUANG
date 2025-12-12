@@ -60,6 +60,14 @@ $tahun_result = mysqli_query($koneksi, $tahun_query);
       font-size: 0.85rem;
     }
 
+    .badge-menunggu {
+      background: #ffbf00ff;
+      color: black;
+      padding: 5px 12px;
+      border-radius: 50px;
+      font-size: 0.85rem;
+    }
+
     table tr:hover td {
       background-color: #fff8dc !important;
     }
@@ -78,6 +86,16 @@ $tahun_result = mysqli_query($koneksi, $tahun_query);
     .logoMobile {
       width: 80px;
       display: block;
+    }
+
+    .metode-btn.active {
+      background-color: #f5c83b !important;
+      color: black !important;
+      border-color: #f5c83b !important;
+    }
+
+    .upload-section {
+      margin-top: 20px;
     }
   </style>
 </head>
@@ -200,16 +218,23 @@ $tahun_result = mysqli_query($koneksi, $tahun_query);
                 ?>
                   <span class="badge-lunas">Lunas</span>
                 <?php elseif ($status == 'menunggu'): ?>
-                  <span class="badge-belum">Menunggu</span>
+                  <span class="badge-menunggu"><b>Menunggu</b></span>
                 <?php else: ?>
                   <span class="badge-belum">Belum Lunas</span>
                 <?php endif; ?>
 
               </td>
               <td>
-                <?php if (strtolower($row['status_pembayaran']) != 'lunas'): ?>
-                  <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#modalPembayaran<?= $row['id_pembayaran'] ?>">Bayar</button>
-
+                <?php 
+                $status = strtolower($row['status_pembayaran']);
+                if ($status === 'belum' || $status === 'ditolak'): ?>
+                  <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#modalPembayaran<?= $row['id_pembayaran'] ?>">
+                    Bayar
+                  </button>
+                <?php elseif ($status === 'menunggu'): ?>
+                  <span class="badge-warning text-dark">Menunggu konfirmasi...</span>
+                <?php elseif ($status === 'lunas'): ?>
+                  <span class="text-success"><i class="fa-solid fa-check-circle"></i> Lunas</span>
                 <?php else: ?>
                   -
                 <?php endif; ?>
@@ -238,15 +263,9 @@ $tahun_result = mysqli_query($koneksi, $tahun_query);
                         (Rp<?= number_format($row['nominal_pembayaran'], 0, ',', '.') ?>)
                       </h5>
 
-                      <!-- Jenis Iuran -->
-                      <div class="mb-3">
-                        <label class="form-label fw-semibold">1. Jenis Iuran</label>
-                        <input type="text" class="form-control" value="<?= htmlspecialchars($row['jenis_pembayaran']) ?>" readonly>
-                      </div>
-
                       <!-- Metode Pembayaran -->
                       <div class="mb-3">
-                        <label class="form-label fw-semibold">2. Metode Pembayaran</label>
+                        <label class="form-label fw-semibold">Metode Pembayaran</label>
                         <div class="d-grid gap-2">
                           <button class="btn btn-outline-secondary metode-btn" data-metode="bank">
                             <i class="fa-solid fa-building-columns me-2"></i>Transfer Bank
@@ -288,20 +307,21 @@ $tahun_result = mysqli_query($koneksi, $tahun_query);
 
 
                       <!-- Form Upload -->
-                      <form action="aksi/upload_bukti.php" method="post" enctype="multipart/form-data">
-                        <input type="hidden" name="id_pembayaran" value="<?= $row['id_pembayaran'] ?>">
+                      <div id="formUpload<?= $row['id_pembayaran'] ?>" class="upload-section">
+                        <form action="aksi/upload_bukti.php" method="post" enctype="multipart/form-data">
+                          <input type="hidden" name="id_pembayaran" value="<?= $row['id_pembayaran'] ?>">
 
-                        <div class="mb-3">
-                          <label class="form-label fw-semibold">Upload Bukti Pembayaran</label>
-                          <input type="file" name="bukti" class="form-control" accept=".jpg,.png,.jpeg" required>
-                        </div>
+                          <div class="mb-3">
+                            <label class="form-label fw-semibold">Upload Bukti Pembayaran</label>
+                            <input type="file" name="bukti" class="form-control" accept=".jpg,.png,.jpeg" required>
+                          </div>
 
-                        <div class="modal-footer border-0">
-                          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                          <button type="submit" class="btn btn-warning">Kirim</button>
-                        </div>
-                      </form>
-
+                          <div class="modal-footer border-0">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                            <button type="submit" class="btn btn-warning">Kirim Bukti Transfer</button>
+                          </div>
+                        </form>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -340,9 +360,6 @@ $tahun_result = mysqli_query($koneksi, $tahun_query);
       });
     });
 
-
-
-
     // Sidebar Mobile
     document.getElementById('menuToggle').addEventListener('click', () => {
       document.getElementById('sidebar').classList.toggle('show');
@@ -352,32 +369,35 @@ $tahun_result = mysqli_query($koneksi, $tahun_query);
       document.getElementById('sidebar').classList.remove('show');
       document.getElementById('overlay').classList.remove('active');
     });
-
-
-    document.querySelectorAll('.metode-btn').forEach(btn => {
-      btn.addEventListener('click', function() {
-
-        const modal = this.closest('.modal');
-        const id = modal.id.replace('modalPembayaran', '');
-
-        // tombol
-        modal.querySelectorAll('.metode-btn').forEach(b => b.classList.remove('active'));
-        this.classList.add('active');
-
-        // info
-        const bankBox = modal.querySelector('#bank' + id);
-        const tunaiBox = modal.querySelector('#tunai' + id);
-
-        if (this.dataset.metode === "bank") {
-          bankBox.classList.remove('d-none');
-          tunaiBox.classList.add('d-none');
-        } else {
-          tunaiBox.classList.remove('d-none');
-          bankBox.classList.add('d-none');
-        }
-      });
-    });
   </script>
+
+  <script>
+  document.querySelectorAll('.metode-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const modal = this.closest('.modal');
+      const modalId = modal.id.replace('modalPembayaran', '');
+      
+      // Hapus class active dari semua tombol di modal ini
+      modal.querySelectorAll('.metode-btn').forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+
+      // Sembunyikan semua info & form dulu
+      modal.querySelectorAll('.info-metode-bank, .info-metode-tunai, .upload-section').forEach(el => {
+        el.classList.add('d-none');
+      });
+
+      // Tampilkan sesuai pilihan
+      if (this.dataset.metode === "bank") {
+        document.getElementById('bank' + modalId).classList.remove('d-none');
+        document.getElementById('formUpload' + modalId).classList.remove('d-none'); // Form muncul
+      } else if (this.dataset.metode === "tunai") {
+        document.getElementById('tunai' + modalId).classList.remove('d-none');
+        // Form upload TIDAK MUNCUL untuk tunai
+      }
+    });
+  });
+  </script>
+
 </body>
 
 </html>

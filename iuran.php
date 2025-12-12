@@ -187,21 +187,6 @@ include 'koneksi/koneksi.php';
       color: #fff;
     }
 
-    .floating-btn {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      background: linear-gradient(135deg, #f5c83b, #caa43b);
-      color: white;
-      border: none;
-      width: 55px;
-      height: 55px;
-      border-radius: 50%;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-      font-size: 1.4rem;
-      z-index: 1001;
-    }
-
     .form-select,
     .form-control {
       border-radius: 10px;
@@ -367,9 +352,6 @@ include 'koneksi/koneksi.php';
       <i class="fa fa-users"></i> Buat Iuran Wajib Bulanan
     </button>
 
-    
-
-
     <div class="table-responsive">
       <table class="table table-bordered align-middle text-center shadow-sm rounded">
         <thead>
@@ -424,7 +406,8 @@ include 'koneksi/koneksi.php';
                     data-kategori="<?= ucfirst($data['jenis_pembayaran']); ?>"
                     data-bulan="<?= ucfirst($data['bulan_pembayaran']); ?>"
                     data-tahun="<?= $data['tahun_pembayaran']; ?>"
-                    data-nominal="<?= number_format($data['nominal_pembayaran'], 0, ',', '.'); ?>"
+                    data-nominal="<?= $data['nominal_pembayaran']; ?>"
+                    data-status="<?= ucfirst($data['status_pembayaran']); ?>"
                     data-bukti="<?= $data['bukti_pembayaran']; ?>">
                     <i class="fa fa-eye"></i>
                   </button>
@@ -442,7 +425,7 @@ include 'koneksi/koneksi.php';
                   </a>
 
                 <?php elseif ($data['status_pembayaran'] == 'belum'): ?>
-                  <button class="btn btn-success btn-sm"
+                  <button class="btn btn-success btn-sm me-1"
                     data-bs-toggle="modal"
                     data-bs-target="#modalBayarTunai"
                     data-id="<?= $data['id_pembayaran']; ?>"
@@ -452,6 +435,33 @@ include 'koneksi/koneksi.php';
                     data-tahun="<?= $data['tahun_pembayaran']; ?>"
                     data-nominal="<?= $data['nominal_pembayaran']; ?>">
                     <i class="fa fa-money-bill-wave"></i> Bayar Tunai
+                  </button>
+
+                  <!-- TOMBOL BEL NOTIFIKASI -->
+                  <?php
+                  $cek_notif = mysqli_query($koneksi, "
+                      SELECT id FROM notifikasi_warga 
+                      WHERE id_warga = '{$data['id_warga']}' 
+                        AND judul LIKE '%{$data['jenis_pembayaran']}%' 
+                        AND judul LIKE '%{$data['bulan_pembayaran']}%' 
+                        AND judul LIKE '%{$data['tahun_pembayaran']}%'
+                        AND tanggal >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
+                  ");
+                  $sudah_kirim = mysqli_num_rows($cek_notif) > 0;
+                  ?>
+
+                  <button class="btn btn-warning btn-sm <?= $sudah_kirim ? 'disabled' : '' ?>"
+                    data-bs-toggle="modal"
+                    data-bs-target="<?= $sudah_kirim ? '' : '#modalNotifikasiSingle' ?>"
+                    data-id-warga="<?= $data['id_warga']; ?>"
+                    data-nama="<?= htmlspecialchars($data['nama']); ?>"
+                    data-jenis="<?= ucfirst($data['jenis_pembayaran']); ?>"
+                    data-bulan="<?= ucfirst($data['bulan_pembayaran']); ?>"
+                    data-tahun="<?= $data['tahun_pembayaran']; ?>"
+                    data-nominal="<?= number_format($data['nominal_pembayaran'], 0, ',', '.'); ?>"
+                    <?= $sudah_kirim ? 'disabled title="Notifikasi sudah dikirim dalam 24 jam terakhir"' : '' ?>>
+                    <i class="fa fa-bell"></i>
+                    <?= $sudah_kirim ? '<i class="fa fa-check ms-1"></i>' : '' ?>
                   </button>
 
                 <?php else: ?>
@@ -527,74 +537,11 @@ include 'koneksi/koneksi.php';
     </div>
   </div>
 
-  <!-- MODAL BUAT IURAN TAMBAHAN -->
-  <div class="modal fade" id="modalTambahIuran" tabindex="-1">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <form action="aksi/iuran_kustom.php" method="POST">
-          <div class="modal-header bg-success text-white">
-            <h5 class="modal-title"><i class="fa fa-plus"></i> Buat Iuran Tambahan</h5>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-          </div>
-          <div class="modal-body">
-
-            <div class="mb-3">
-              <label>Warga</label>
-              <select name="id_warga" class="form-select" required>
-                <option value="">Pilih Warga</option>
-                <?php
-                $q = mysqli_query($koneksi, "SELECT w.id_warga, pg.nama FROM warga w JOIN pengguna pg ON w.id_pengguna = pg.id_pengguna ORDER BY pg.nama");
-                while ($w = mysqli_fetch_assoc($q)) {
-                  echo "<option value='{$w['id_warga']}'>{$w['nama']}</option>";
-                }
-                ?>
-              </select>
-            </div>
-
-            <div class="mb-3">
-              <label>Jenis Iuran</label>
-              <select name="jenis" class="form-select" required>
-                <option value="">Pilih Jenis</option>
-                <option value="keamanan">Keamanan</option>
-                <option value="kebersihan">Kebersihan</option>
-                <option value="kas">Kas</option>
-              </select>
-            </div>
-
-            <div class="mb-3">
-              <label>Bulan</label>
-              <select name="bulan" class="form-select" required>
-                <option value="">Pilih Bulan</option>
-                <?php foreach (['januari', 'februari', 'maret', 'april', 'mei', 'juni', 'juli', 'agustus', 'september', 'oktober', 'november', 'desember'] as $b): ?>
-                  <option value="<?= $b ?>"><?= ucfirst($b) ?></option>
-                <?php endforeach; ?>
-              </select>
-            </div>
-
-            <div class="mb-3">
-              <label>Tahun</label>
-              <input type="number" name="tahun" class="form-control" value="<?= date('Y') ?>" required>
-            </div>
-
-            <div class="mb-3">
-              <label>Nominal (Rp)</label>
-              <input type="number" name="nominal" class="form-control" required>
-            </div>
-
-          </div>
-          <div class="modal-footer">
-            <button type="submit" class="btn btn-success">Simpan Iuran Kustom</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-
   <div class="modal fade" id="detailModal" tabindex="-1">
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header bg-warning">
-          <h5 class="modal-title">Detail Pembayaran</h5>
+          <h5 class="modal-title"><b>Detail Pembayaran</b></h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
@@ -612,7 +559,6 @@ include 'koneksi/koneksi.php';
       </div>
     </div>
   </div>
-
 
   <!-- MODAL BAYAR TUNAI -->
   <div class="modal fade" id="modalBayarTunai" tabindex="-1">
@@ -653,6 +599,50 @@ include 'koneksi/koneksi.php';
           <div class="modal-footer">
             <button type="submit" class="btn btn-success btn-lg">
               Konfirmasi & Simpan
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL NOTIFIKASI -->
+  <div class="modal fade" id="modalNotifikasiSingle" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <form action="aksi/kirim_notifikasi.php" method="POST">
+          <div class="modal-header bg-warning">
+            <h5 class="modal-title"><i class="fa-solid fa-bell"></i> Kirim Pengingat Pembayaran</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            
+            <input type="hidden" name="id_warga" id="notifIdWarga">
+            <input type="hidden" name="jenis" id="notifJenis">
+            <input type="hidden" name="bulan" id="notifBulan">
+            <input type="hidden" name="tahun" id="notifTahun">
+
+            <div class="alert alert-info">
+              <strong>Kepada:</strong> <span id="notifNama" class="text-primary"></span><br>
+              <strong>Untuk:</strong> Iuran <span id="notifJenisText"></span> - <span id="notifBulanText"></span> <span id="notifTahunText"></span><br>
+              <strong>Nominal:</strong> Rp<span id="notifNominal"></span>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-bold">Judul Notifikasi</label>
+              <input type="text" name="judul" class="form-control" id="notifJudul"
+                    value="Pengingat Pembayaran Iuran" required>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-bold">Isi Pesan</label>
+              <textarea name="isi" class="form-control" rows="4" id="notifIsi" required>Mohon segera melunasi pembayaran iuran. Terima kasih atas kerjasamanya.</textarea>
+            </div>
+
+          </div>
+          <div class="modal-footer">
+            <button type="submit" class="btn btn-warning">
+              <i class="fa fa-paper-plane"></i> Kirim Notifikasi
             </button>
           </div>
         </form>
@@ -732,33 +722,27 @@ include 'koneksi/koneksi.php';
       detailModal.addEventListener('show.bs.modal', function(event) {
         const button = event.relatedTarget;
 
-        // ambil data
         const nama = button.getAttribute('data-nama');
-        const jenis = button.getAttribute('data-jenis');
+        const kategori = button.getAttribute('data-kategori');
         const bulan = button.getAttribute('data-bulan');
         const tahun = button.getAttribute('data-tahun');
         const nominal = button.getAttribute('data-nominal');
         const status = button.getAttribute('data-status');
         const bukti = button.getAttribute('data-bukti');
 
-        // isi modal
+        // Isi modal
         document.getElementById('detail-nama').textContent = nama;
-        document.getElementById('detail-jenis').textContent = jenis;
+        document.getElementById('detail-jenis').textContent = kategori;
         document.getElementById('detail-bulan').textContent = bulan;
         document.getElementById('detail-tahun').textContent = tahun;
-        document.getElementById('detail-nominal').textContent = "Rp" + parseInt(nominal).toLocaleString('id-ID');
+        document.getElementById('detail-nominal').textContent = "Rp" + Number(nominal).toLocaleString('id-ID');
         document.getElementById('detail-status').textContent = status;
 
         const buktiWrapper = document.getElementById('detail-bukti-wrapper');
-
         if (bukti && bukti !== "") {
-          buktiWrapper.innerHTML = `
-                <img src="assets/bukti_pembayaran/${bukti}" class="img-fluid rounded mt-2">
-            `;
+          buktiWrapper.innerHTML = `<img src="assets/bukti_pembayaran/${bukti}" class="img-fluid rounded mt-3" style="max-height:400px;">`;
         } else {
-          buktiWrapper.innerHTML = `
-                <p class="text-danger">Belum ada bukti pembayaran.</p>
-            `;
+          buktiWrapper.innerHTML = `<p class="text-muted mt-3">Tidak ada bukti pembayaran.</p>`;
         }
       });
     });
@@ -784,6 +768,38 @@ include 'koneksi/koneksi.php';
         document.getElementById('tunaiBulan').textContent = bulan;
         document.getElementById('tunaiTahun').textContent = tahun;
         document.getElementById('tunaiNominal').value = nominal;
+      });
+    }
+
+    // Handle modal notifikasi single
+    const modalNotifSingle = document.getElementById('modalNotifikasiSingle');
+    if (modalNotifSingle) {
+      modalNotifSingle.addEventListener('show.bs.modal', function(event) {
+        const button = event.relatedTarget;
+
+        // Ambil data dari button
+        const idWarga = button.getAttribute('data-id-warga');
+        const nama = button.getAttribute('data-nama');
+        const jenis = button.getAttribute('data-jenis');
+        const bulan = button.getAttribute('data-bulan');
+        const tahun = button.getAttribute('data-tahun');
+        const nominal = button.getAttribute('data-nominal');
+
+        // Isi ke modal
+        document.getElementById('notifIdWarga').value = idWarga;
+        document.getElementById('notifJenis').value = jenis.toLowerCase();
+        document.getElementById('notifBulan').value = bulan.toLowerCase();
+        document.getElementById('notifTahun').value = tahun;
+        
+        document.getElementById('notifNama').textContent = nama;
+        document.getElementById('notifJenisText').textContent = jenis;
+        document.getElementById('notifBulanText').textContent = bulan;
+        document.getElementById('notifTahunText').textContent = tahun;
+        document.getElementById('notifNominal').textContent = nominal;
+
+        // Auto-fill pesan
+        const pesanOtomatis = `Yth. Bapak/Ibu ${nama}, Kami mengingatkan bahwa pembayaran Iuran ${jenis} untuk periode ${bulan} ${tahun} sebesar Rp${nominal} belum kami terima. Mohon segera melakukan pembayaran. Terima kasih atas kerjasamanya.`;
+        document.getElementById('notifIsi').value = pesanOtomatis;
       });
     }
   </script>

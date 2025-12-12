@@ -41,6 +41,7 @@ if ($update && !empty($data['bukti_pembayaran'])) {
     if (file_exists($file_path)) {
         unlink($file_path);
 }
+}
 
 if ($update) {
     echo "<script>

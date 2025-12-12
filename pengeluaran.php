@@ -299,7 +299,7 @@ while ($row = mysqli_fetch_assoc($result_pengeluaran)) {
     <hr>
     <ul class="nav flex-column mt-4">
       <li><a href="dashboard.php" class="nav-link"><i class="fa-solid fa-house me-2"></i>Dashboard</a></li>
-      <li><a href="status.php" class="nav-link"><i class="fa-solid fa-file-signature me-2"></i>Persetujuan</a></li>
+      <li><a href="status.php" class="nav-link"><i class="fa-solid fa-file-signature me-2"></i>Status</a></li>
       <li><a href="pengeluaran.php" class="nav-link active"><i class="fa-solid fa-coins me-2"></i>Pengeluaran</a></li>
       <li><a href="laporan.php" class="nav-link"><i class="fa-solid fa-file-lines me-2"></i>Laporan</a></li>
     </ul>
@@ -317,6 +317,7 @@ while ($row = mysqli_fetch_assoc($result_pengeluaran)) {
   <main class="main-content">
     <div class="text-center mb-4">
       <h2 class="fw-bold">Pemasukan dan Pengeluaran Tahun <?= $tahun_ini ?></h2>
+      <p class="text-muted">Lihat rincian pemasukan dan pengeluaran pertahun.</p>
     </div>
 
    <!-- Info Box (3 Kolom) -->

@@ -1,54 +1,32 @@
 <?php
-ob_start();
 header('Content-Type: application/json');
-
-// Koneksi database
 $conn = mysqli_connect("localhost", "root", "", "ruang");
-if (!$conn) {
-    echo json_encode(['error' => 'Koneksi database gagal']);
-    exit;
-}
+if (!$conn) exit(json_encode(['pemasukan'=>array_fill(0,12,0), 'pengeluaran'=>array_fill(0,12,0)]));
 
-$tahun = isset($_GET['tahun']) ? (int)$_GET['tahun'] : date('Y');
-
-// Validasi tahun (biar aman)
-if ($tahun < 2000 || $tahun > 3000) $tahun = date('Y');
+$tahun = isset($_GET['tahun']) ? max(2023, min(2025, (int)$_GET['tahun'])) : date('Y');
 
 $pemasukan   = array_fill(0, 12, 0);
 $pengeluaran = array_fill(0, 12, 0);
 
-$bulan_list = ['january','february','march','april','may','june','july','august','september','october','november','december'];
+$bulan_map = ['january'=>0,'february'=>1,'march'=>2,'april'=>3,'may'=>4,'june'=>5,'july'=>6,'august'=>7,'september'=>8,'october'=>9,'november'=>10,'december'=>11];
 
-for ($i = 0; $i < 12; $i++) {
-    $bln = $bulan_list[$i];
-
-    // Pemasukan (lunas)
-    $sql1 = "SELECT COALESCE(SUM(nominal_pembayaran),0) 
-             FROM pembayaran 
-             WHERE status_pembayaran='lunas' 
-               AND tahun_pembayaran='$tahun' 
-               AND bulan_pembayaran='$bln'";
-    $res1 = mysqli_query($conn, $sql1);
-    $pemasukan[$i] = $res1 && mysqli_num_rows($res1) > 0 ? (float)mysqli_fetch_array($res1)[0] / 1000000 : 0;
-
-    // Pengeluaran (disetujui)
-    $bulan_ke = $i + 1;
-    $sql2 = "SELECT COALESCE(SUM(nominal_pengeluaran),0) 
-             FROM pengeluaran 
-             WHERE status_persetujuan='Disetujui' 
-               AND YEAR(tanggal_pengeluaran)='$tahun' 
-               AND MONTH(tanggal_pengeluaran)='$bulan_ke'";
-    $res2 = mysqli_query($conn, $sql2);
-    $pengeluaran[$i] = $res2 && mysqli_num_rows($res2) > 0 ? (float)mysqli_fetch_array($res2)[0] / 1000000 : 0;
+// Pemasukan
+$q1 = mysqli_prepare($conn, "SELECT LOWER(bulan_pembayaran) as bln, SUM(nominal_pembayaran) as total FROM pembayaran WHERE status_pembayaran='lunas' AND tahun_pembayaran=? GROUP BY bulan_pembayaran");
+mysqli_stmt_bind_param($q1, "i", $tahun);
+mysqli_stmt_execute($q1);
+$res1 = mysqli_stmt_get_result($q1);
+while ($r = mysqli_fetch_assoc($res1)) {
+    if (isset($bulan_map[$r['bln']])) $pemasukan[$bulan_map[$r['bln']]] = (int)$r['total'];
 }
 
-// Keluarkan JSON bersih
-echo json_encode([
-    'pemasukan' => array_map('floatval', $pemasukan),
-    'pengeluaran' => array_map('floatval', $pengeluaran)
-]);
+// Pengeluaran
+$q2 = mysqli_prepare($conn, "SELECT MONTH(tanggal_pengeluaran)-1 as idx, SUM(nominal_pengeluaran) as total FROM pengeluaran WHERE status_persetujuan='Disetujui' AND YEAR(tanggal_pengeluaran)=? GROUP BY MONTH(tanggal_pengeluaran)");
+mysqli_stmt_bind_param($q2, "i", $tahun);
+mysqli_stmt_execute($q2);
+$res2 = mysqli_stmt_get_result($q2);
+while ($r = mysqli_fetch_assoc($res2)) {
+    $pengeluaran[$r['idx']] = (int)$r['total'];
+}
 
-// Pastikan tidak ada output lain
-ob_end_flush();
-exit;
+echo json_encode(['pemasukan' => $pemasukan, 'pengeluaran' => $pengeluaran]);
 ?>
