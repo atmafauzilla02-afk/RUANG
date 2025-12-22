@@ -27,13 +27,13 @@
       width: 100%;
       text-align: left;
       font-size: 15px;
-      padding: 12px 15px; /* biar lebih nyaman */
+      padding: 12px 15px;
     }
     
     .pass-icon {
       position: absolute;
       right: 15px;
-      top: 68%;                     /* DITURUNKAN SEDIKIT LAGI (dari 65% jadi 68%) */
+      top: 68%;
       transform: translateY(-50%);
       cursor: pointer;
       width: 26px;
@@ -68,6 +68,10 @@
              class="pass-icon" 
              id="pass-icon" 
              onclick="togglePassword()">
+      </div>
+
+      <div class="remember-forgot">
+        <a href="lupa_password.php">Lupa kata sandi?</a>
       </div>
 
       <input type="submit" value="Login" name="submit" class="btn">

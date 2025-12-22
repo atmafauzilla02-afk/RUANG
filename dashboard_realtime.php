@@ -1,7 +1,6 @@
 <?php
-// ajax/realtime_kas.php
 session_start();
-require '../koneksi/koneksi.php'; // sesuaikan path koneksi PDO kamu
+require '../koneksi/koneksi.php';
 
 header('Content-Type: application/json');
 
@@ -9,7 +8,6 @@ $bulan_ini = date('Y-m');
 $tahun_ini = date('Y');
 $bulan = date('m');
 
-// 1. Total Saldo Kas (Realtime dari transaksi)
 $saldo = $pdo->query("
     SELECT 
         COALESCE(SUM(CASE WHEN jenis_pembayaran = 'kas' AND status_pembayaran = 'lunas' THEN jumlah ELSE 0 END), 0) 
@@ -18,7 +16,6 @@ $saldo = $pdo->query("
     FROM pembayaran
 ")->fetchColumn();
 
-// 2. Pemasukan bulan ini
 $pemasukan = $pdo->prepare("
     SELECT COALESCE(SUM(jumlah), 0)
     FROM pembayaran 
@@ -29,7 +26,6 @@ $pemasukan = $pdo->prepare("
 $pemasukan->execute([$tahun_ini, $bulan]);
 $pemasukan_bulan = $pemasukan->fetchColumn();
 
-// 3. Pengeluaran bulan ini (disetujui)
 $pengeluaran = $pdo->prepare("
     SELECT COALESCE(SUM(nominal_pengeluaran), 0)
     FROM pengeluaran 

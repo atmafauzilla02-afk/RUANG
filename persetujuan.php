@@ -100,7 +100,6 @@
       .main-content { margin-left: 0; padding-top: 70px; }
     }
 
-    /* === CARD STYLING === */
     .card-persetujuan {
       background: #fff;
       border-radius: 14px;
@@ -156,7 +155,6 @@
       }
     }
 
-    /* Smooth fade animation */
     .fade-in {
       opacity: 0;
       transform: translateY(10px);
@@ -190,15 +188,11 @@
   width: 80px;         
   display: block;
 }
-
-
-
-
   </style>
 </head>
 <body>
 
-    <header class="mobile-header d-lg-none">
+  <header class="mobile-header d-lg-none">
     <button id="menuToggle" class="btn btn-warning me-2"><i class="fa-solid fa-bars"></i></button>
     <img src="assets/img/logo final.png" class="logoMobile"  alt="logo">
   </header>
@@ -327,7 +321,7 @@ function konfirmasi(id, aksi) {
             const result = await res.json();
 
             if (result.success) {
-                loadData(); // refresh data
+                loadData();
                 modal.hide();
             } else {
                 alert("Gagal memperbarui status!");
@@ -340,10 +334,8 @@ function konfirmasi(id, aksi) {
     modal.show();
 }
 
-// Load pertama kali
 loadData();
 
-// Sidebar toggle (tetap sama)
 document.getElementById('menuToggle')?.addEventListener('click', () => {
     document.getElementById('sidebar').classList.toggle('show');
     document.getElementById('overlay').classList.toggle('active');

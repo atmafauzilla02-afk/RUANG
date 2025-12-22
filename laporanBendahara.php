@@ -32,7 +32,6 @@ if (!isset($_SESSION['id_pengguna'])) {
       overflow-x: hidden;
     }
 
-    /* SIDEBAR */
     .sidebar {
       width: 240px;
       height: 100vh;
@@ -91,14 +90,12 @@ if (!isset($_SESSION['id_pengguna'])) {
       background-color: #222;
     }
 
-    /* CONTENT */
     .content {
       margin-left: 260px;
       padding: 40px;
       transition: 0.3s;
     }
 
-    /* HEADER MOBILE */
     .mobile-header {
       position: fixed;
       top: 0;
@@ -125,28 +122,22 @@ if (!isset($_SESSION['id_pengguna'])) {
       padding: 4px 8px;
     }
 
-    /* FILTER BAR */
     .filter-row {
       display: flex;
       justify-content: space-between;
-      /* biar tombol di kanan */
       align-items: center;
-      /* biar sejajar vertikal */
       gap: 10px;
-      /* jarak antar elemen */
     }
 
     .filter-controls {
       display: flex;
       gap: 10px;
-      /* jarak antar select */
     }
 
     .btn-upload {
       white-space: nowrap;
     }
 
-    /* RESPONSIVE */
     @media (max-width: 768px) {
       .content {
         margin-left: 0;
@@ -377,7 +368,6 @@ document.addEventListener('DOMContentLoaded', () => {
   bulanNama.forEach(b => filterBulan.add(new Option(b, b)));
 });
 
-// Isi dropdown tahun otomatis (10 tahun terakhir + tahun ini)
 document.addEventListener('DOMContentLoaded', function() {
   const tahunSelect = document.getElementById('genTahun');
   const tahunSekarang = new Date().getFullYear();
@@ -391,7 +381,6 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 });
 
-// Event klik tombol Generate di dalam modal
 document.getElementById('btnGenerateLaporan').addEventListener('click', function() {
   const tahun = document.getElementById('genTahun').value;
   const bulan = document.getElementById('genBulan').value;
@@ -426,7 +415,7 @@ document.getElementById('btnGenerateLaporan').addEventListener('click', function
   .then(res => {
     if (res.success) {
       alert('Berhasil! ' + res.message);
-      renderLaporan(); // refresh daftar laporan
+      renderLaporan();
       bootstrap.Modal.getInstance(document.getElementById('generateModal')).hide();
     } else {
       alert('Gagal: ' + res.message);
@@ -466,9 +455,8 @@ async function renderLaporan() {
         }
 
         data.forEach(item => {
-            // Pastikan path benar dan bisa diakses dari browser
-            const fileUrl = item.path.replace('../', './'); // Ubah ../uploads jadi ./uploads
-            const safePath = fileUrl.replace(/ /g, '%20'); // Encode spasi (penting!)
+            const fileUrl = item.path.replace('../', './');
+            const safePath = fileUrl.replace(/ /g, '%20');
 
             container.innerHTML += `
                 <div class="list-group-item d-flex justify-content-between align-items-center mb-2">
@@ -499,21 +487,18 @@ async function renderLaporan() {
     }
 }
 
-// Fungsi lihat PDF di modal
 function lihatLaporan(path, judul) {
     const iframe = document.getElementById('pdfViewer');
-    iframe.src = path + "?v=" + Date.now(); // Cache buster
+    iframe.src = path + "?v=" + Date.now();
     document.getElementById('pdfTitle').innerText = `Laporan ${judul}`;
     
     const modal = new bootstrap.Modal(document.getElementById('lihatModal'));
     modal.show();
 }
 
-// Event filter
 document.getElementById('filterTahun').addEventListener('change', renderLaporan);
 document.getElementById('filterBulan').addEventListener('change', renderLaporan);
 
-// Load pertama kali
 renderLaporan();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>

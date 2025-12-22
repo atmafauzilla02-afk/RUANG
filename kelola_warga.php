@@ -93,7 +93,6 @@ if (!isset($_SESSION['id_pengguna'])) {
 
     .logout-btn:hover { background-color: #222; }
 
-    /* ===== MAIN CONTENT ===== */
     .main-content {
        margin-left: 240px;
       padding: 90px 30px 30px;
@@ -101,7 +100,6 @@ if (!isset($_SESSION['id_pengguna'])) {
       transition: margin-left 0.3s ease;
     }
 
-    /* ===== TABLE ===== */
     .table {
       min-width: 720px;
       border-radius: 12px;
@@ -115,7 +113,6 @@ if (!isset($_SESSION['id_pengguna'])) {
       text-align: center;
     }
 
-    /* ===== TOGGLE BUTTON ===== */
     #toggleSidebar {
       background: none;
       border: none;
@@ -125,7 +122,6 @@ if (!isset($_SESSION['id_pengguna'])) {
       display: none;
     }
 
-    /* ===== FILTER BAR ===== */
     .filter-bar {
       display: flex;
       align-items: center;
@@ -151,7 +147,6 @@ if (!isset($_SESSION['id_pengguna'])) {
       font-weight: 600;
     }
 
-    /* ===== RESPONSIVE ===== */
     @media (max-width: 992px) {
       #toggleSidebar {
         display: inline-block;
@@ -259,12 +254,7 @@ if (!isset($_SESSION['id_pengguna'])) {
   width: 80px;         
   display: block;
 }
-
-  
-     
-  
-
-  </style>
+</style>
 </head>
 
 <body>
@@ -345,7 +335,6 @@ if (!isset($_SESSION['id_pengguna'])) {
                             </td>
                         </tr> 
               <?php } ?>
-                      
           </tbody>
         </table>
       </div>
@@ -463,27 +452,20 @@ document.getElementById("menuToggle").addEventListener("click", function () {
 </script>
 
 <script>
-// KLIK TOMBOL TAMBAH → BUKA MODAL DENGAN FORM KOSONG
 document.getElementById('btnTambahWarga')?.addEventListener('click', function() {
-    // Bersihkan URL dari ?edit tanpa reload
     history.replaceState({}, '', 'kelola_warga.php');
     
-    // Ubah judul modal
     document.getElementById('modalTitle').textContent = 'Tambah Warga';
     
-    // Kosongkan semua field
     document.querySelectorAll('#formWarga input[name]').forEach(input => {
         if (input.name !== 'id_pengguna') input.value = '';
     });
     
-    // Pastikan action form ke tambah
     document.getElementById('formWarga').action = 'aksi/tambah_kelola_warga.php';
     
-    // Hapus input hidden id_pengguna jika ada
     const hiddenId = document.querySelector('#formWarga input[name="id_pengguna"]');
     if (hiddenId) hiddenId.remove();
     
-    // Buka modal
     const modalElement = document.getElementById('modalWarga');
     const modal = bootstrap.Modal.getInstance(modalElement) || new bootstrap.Modal(modalElement);
     modal.show();

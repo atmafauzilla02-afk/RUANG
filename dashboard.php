@@ -102,20 +102,19 @@ if (!$profile_data) {
 
 <!DOCTYPE html>
 <html lang="id">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard | Ruang</title>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | Ruang</title>
 
-  <!-- Bootstrap & Font -->
-  <link href="./assets/bootstrap-5.3.8-dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-  <link rel="stylesheet" href="assets/css/style.css">
-</head>
+    <!-- Bootstrap & Font -->
+    <link href="./assets/bootstrap-5.3.8-dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+  </head>
 
 <body class="dashboard-bg">
-
 <style>
   .info-card {
     
@@ -248,7 +247,6 @@ if (!$profile_data) {
   <div class="overlay"></div>
 
   <!-- MAIN CONTENT -->
-   
   <main id="mainContent">
     <header class="d-flex justify-content-between align-items-center mb-4">
       <div>
@@ -478,7 +476,6 @@ if (!$profile_data) {
         const totalMasuk = data.pemasukan.reduce((a,b) => a + b, 0);
         const totalKeluar = data.pengeluaran.reduce((a,b) => a + b, 0);
 
-        // Jika tidak ada data tahun ini
         if (totalMasuk === 0 && totalKeluar === 0) {
             document.querySelector('.chart-card .position-relative').innerHTML = `
                 <div class="text-center py-5 text-muted">
@@ -488,7 +485,6 @@ if (!$profile_data) {
             return;
         }
 
-        // Ada data → tampilkan grafik batang
         const ctx = document.getElementById('chartArea').getContext('2d');
 
         chart = new Chart(ctx, {
@@ -554,15 +550,13 @@ function updateKas() {
     fetch(REALTIME_URL)
         .then(res => res.json())
         .then(data => {
-            // Sesuaikan ID ini dengan elemen HTML kamu
             document.getElementById('total-saldo')?.innerText = data.saldo;
             document.getElementById('pemasukan-bulan')?.innerText = data.pemasukan_bulan;
             document.getElementById('pengeluaran-bulan')?.innerText = data.pengeluaran_bulan;
             document.getElementById('waktu-update')?.innerText = 'Update: ' + data.updated_at;
 
-            // Jika kamu pakai Chart.js untuk grafik
             if (typeof updateChart === 'function') {
-                updateChart(data); // kamu buat fungsi ini sendiri kalau perlu
+                updateChart(data);
             }
         })
         .catch(err => console.log('Gagal update kas:', err));
@@ -722,7 +716,7 @@ function loadNotifikasi() {
 function markAllAsRead() {
   console.log('✔️ Marking all as read...');
   
-  fetch('aksi/notifikasi_dibaca.php')  // ✅ INI SUDAH BENAR
+  fetch('aksi/notifikasi_dibaca.php')
     .then(res => res.json())
     .then(data => {
       console.log('✔️ Mark as read response:', data);
@@ -744,7 +738,6 @@ function escapeHtml(text) {
 </script>
 
 <script>
-// Toggle show/hide password
 function togglePassword(inputId, button) {
   const input = document.getElementById(inputId);
   const icon = button.querySelector('i');
@@ -777,7 +770,6 @@ document.getElementById('formGantiPassword')?.addEventListener('submit', functio
     return false;
   }
   
-  // Konfirmasi sebelum submit
   if (confirm('Yakin ingin mengganti password?')) {
     this.submit();
   }

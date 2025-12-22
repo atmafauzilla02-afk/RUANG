@@ -59,7 +59,6 @@
     .info-card:hover { transform: translateY(-3px); }
     .info-card h4 { font-weight: 700; margin-top: 10px; }
 
-    /* Filter bar + button */
     .filter-header {
       display: flex;
       flex-wrap: wrap;
@@ -104,7 +103,6 @@
     #pengajuanList::-webkit-scrollbar { width: 6px; }
     #pengajuanList::-webkit-scrollbar-thumb { background-color: #f5c83b; border-radius: 10px; }
 
-/* === Sidebar Responsive === */
 @media (max-width: 992px) {
   .sidebar {
     position: fixed;
@@ -165,14 +163,9 @@
   width: 80px;         
   display: block;
 }
-
-    
-
-
-  </style>
+</style>
 </head>
 <body>
-
 
 <!-- HEADER MOBILE -->
   <header class="mobile-header d-lg-none">
@@ -283,8 +276,6 @@
             <option value="Kegiatan">Kegiatan</option>
           </select>
          </div>
-
-      
       </div>
       <div class="modal-footer border-0">
         <button type="button" class="btn btn-warning text-dark fw-semibold" data-bs-dismiss="modal">Batal</button>
@@ -310,22 +301,18 @@
   </div>
 </div>
 
-<!-- Overlay untuk menutup sidebar -->
 <div id="overlay"></div>
 
 <script src="./assets/bootstrap-5.3.8-dist/js/bootstrap.bundle.min.js"></script>
   <script>
-    // ===== Global Variables =====
     const sidebar = document.querySelector('.sidebar');
     const overlay = document.getElementById('overlay');
     const menuToggle = document.getElementById('menuToggle');
     const listContainer = document.getElementById('pengajuanList');
     let pengajuanData = [];
 
-    // ===== Format Rupiah =====
     const formatRupiah = (num) => 'Rp' + Number(num).toLocaleString('id-ID');
 
-    // ===== Render List =====
     const renderList = (data) => {
       listContainer.innerHTML = '';
       if (!data || data.length === 0) {
@@ -353,7 +340,6 @@
       });
     };
 
-    // ===== Show Detail Modal =====
     const showDetail = (item) => {
       document.getElementById('detailBody').innerHTML = `
         <p><strong>Judul:</strong> ${item.judul}</p>
@@ -366,7 +352,6 @@
       new bootstrap.Modal('#detailModal').show();
     };
 
-    // ===== Debounce Filter =====
     let debounceTimer;
     const applyFilters = () => {
       clearTimeout(debounceTimer);
@@ -389,7 +374,6 @@
       }, 300);
     };
 
-    // ===== Load Data =====
     const loadPengajuan = async () => {
       try {
         const res = await fetch('aksi/get_pengajuan.php');
@@ -403,7 +387,6 @@
       }
     };
 
-    // ===== Submit Pengajuan =====
     document.getElementById('submitPengajuan').addEventListener('click', async () => {
       const btn = document.getElementById('submitPengajuan');
       const btnText = document.getElementById('btnText');
@@ -419,7 +402,6 @@
         return;
       }
 
-      // Loading state
       btn.disabled = true;
       btnText.textContent = 'Mengirim...';
       spinner.classList.remove('d-none');
@@ -441,7 +423,6 @@
           alert('Pengajuan berhasil dikirim!');
           loadPengajuan();
           bootstrap.Modal.getInstance(document.getElementById('tambahModal')).hide();
-          // Reset form
           document.getElementById('judulInput').value = '';
           document.getElementById('keteranganInput').value = '';
           document.getElementById('nominalInput').value = '';
@@ -458,18 +439,15 @@
       }
     });
 
-    // ===== Event Listeners =====
     document.getElementById('btnTambahPengeluaran').addEventListener('click', () => {
       new bootstrap.Modal('#tambahModal').show();
     });
 
-    // Filter events
     document.getElementById('searchInput').addEventListener('input', applyFilters);
     ['filterKategori', 'filterBulan', 'filterTahun', 'filterStatus'].forEach(id => {
       document.getElementById(id).addEventListener('change', applyFilters);
     });
 
-    // Sidebar mobile
     menuToggle.addEventListener('click', (e) => {
       e.stopPropagation();
       sidebar.classList.toggle('active');
@@ -480,6 +458,5 @@
       overlay.classList.remove('show');
     });
 
-    // Init
     loadPengajuan();
   </script>

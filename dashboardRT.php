@@ -270,13 +270,6 @@ $pengeluaran_tahun = mysqli_fetch_array(mysqli_query($koneksi,
 <script>
 document.addEventListener("DOMContentLoaded", () => {
 
-  // === Data Dummy Notifikasi ===
-  const iuranBelumLunas = [
-    { nama: "Iuran Kas - Februari 2025", nominal: "Rp50.000" },
-    { nama: "Iuran Keamanan - Mei 2025", nominal: "Rp30.000" },
-    { nama: "Iuran Kebersihan - Maret 2025", nominal: "Rp25.000" }
-  ];
-
   const notifBtn = document.getElementById("notifButton");
   const notifList = document.getElementById("notifList");
 

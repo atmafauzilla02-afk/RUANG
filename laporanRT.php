@@ -21,7 +21,6 @@
       
     }
 
-    /* SIDEBAR */
     .sidebar {
       width: 240px;
       height: 100vh;
@@ -56,8 +55,6 @@
       justify-content: center; gap: 6px; transition: 0.2s;
     }
     .logout-btn:hover { background-color: #222; }
-
-    /* CONTENT */
     
     .content { margin-left: 260px; padding: 40px; transition: 0.3s; }
     .content.full { margin-left: 0; }
@@ -182,10 +179,7 @@
           <option value="November">November</option>
           <option value="Desember">Desember</option>
         </select>
-        
-
         <button class="hamburger" id="hamburger"></button>
-       
       </div>
     </div>
 
@@ -235,7 +229,6 @@
         }
 
         data.forEach(item => {
-            // Ubah path dari ../uploads/laporan jadi ./uploads/laporan (bisa dibaca browser)
             const fileUrl = item.path.replace('../', './');
             const safePath = fileUrl.replace(/ /g, '%20');
 
@@ -272,7 +265,6 @@
     document.getElementById("filterTahun").addEventListener("change", renderLaporan);
     document.getElementById("filterBulan").addEventListener("change", renderLaporan);
 
-    // Sidebar toggle
     const sidebar = document.getElementById("sidebar");
     const hamburger = document.getElementById("menuToggle");
 

@@ -90,8 +90,6 @@ include 'koneksi/koneksi.php';
       background-color: #222;
     }
 
-
-    /* RESPONSIVE */
     @media (max-width: 992px) {
       .sidebar {
         left: -240px;
@@ -132,7 +130,6 @@ include 'koneksi/koneksi.php';
       z-index: 998;
     }
 
-    /* MAIN CONTENT */
     .main-content {
       margin-left: 250px;
       padding: 2rem;
@@ -215,7 +212,6 @@ include 'koneksi/koneksi.php';
       .main-content {
         margin-left: 0 !important;
         padding-top: 70px;
-        /* biar ga ketiban header */
       }
 
       .overlay.active {
@@ -250,7 +246,6 @@ include 'koneksi/koneksi.php';
       display: block;
     }
 
-    /* FIX POSISI BEL SUPAYA SELALU DI KANAN BAWAH */
     .floating-btn {
       position: fixed !important;
       bottom: 20px !important;
@@ -653,10 +648,8 @@ include 'koneksi/koneksi.php';
   <script src="./assets/bootstrap-5.3.8-dist/js/bootstrap.bundle.min.js"></script>
 
   <script>
-    // 1. Fix untuk modal detail yang muncul otomatis
     document.addEventListener('DOMContentLoaded', function() {
 
-      // 2. Fix untuk filter search dan table
       const searchInput = document.getElementById('searchInput');
       const filterKategori = document.getElementById('filterKategori');
       const filterBulan = document.getElementById('filterBulan');
@@ -700,7 +693,6 @@ include 'koneksi/koneksi.php';
         filterStatus.addEventListener('change', filterTable);
       }
 
-      // 4. Fix untuk sidebar mobile
       const menuToggle = document.getElementById('menuToggle');
       const sidebar = document.getElementById('sidebar');
       const overlay = document.getElementById('overlay');

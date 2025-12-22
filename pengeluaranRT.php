@@ -1,13 +1,11 @@
 <?php
 session_start();
 
-// Cek login & role ketua
 if (!isset($_SESSION['id_pengguna']) || $_SESSION['role'] !== 'ketua') {
     header("Location: index.php");
     exit;
 }
 
-// Koneksi Database
 $koneksi = mysqli_connect("localhost", "root", "", "ruang");
 if (!$koneksi) {
     die("Koneksi gagal: " . mysqli_connect_error());
@@ -17,7 +15,6 @@ $bulan_eng = ['january','february','march','april','may','june','july','august',
 $bulan_ini = $bulan_eng[date('n') - 1];
 $tahun_ini = date('Y');
 
-// Total Saldo Kas
 $masuk = mysqli_fetch_array(mysqli_query($koneksi, 
     "SELECT COALESCE(SUM(nominal_pembayaran), 0) AS total 
      FROM pembayaran 
@@ -43,7 +40,6 @@ $result_pengeluaran = mysqli_query($koneksi, $query_pengeluaran);
 $pengeluaranData = [];
 
 while ($row = mysqli_fetch_assoc($result_pengeluaran)) {
-    // Ubah tanggal jadi format Indonesia: 16 Agustus 2025
     $tanggal = date('d F Y', strtotime($row['tanggal_pengeluaran']));
     $bulanIndo = ['January'=>'Januari','February'=>'Februari','March'=>'Maret','April'=>'April','May'=>'Mei','June'=>'Juni',
                   'July'=>'Juli','August'=>'Agustus','September'=>'September','October'=>'Oktober','November'=>'November','December'=>'Desember'];
@@ -54,7 +50,7 @@ while ($row = mysqli_fetch_assoc($result_pengeluaran)) {
         'deskripsi' => $row['keterangan_pengeluaran'] ?: '-',
         'nominal'   => (int)$row['nominal_pengeluaran'],
         'tanggal'   => $tanggal,
-        'kategori'  => strtolower($row['jenis_pengeluaran']) // pastikan kolom ini berisi: keamanan/kegiatan/infrastruktur
+        'kategori'  => strtolower($row['jenis_pengeluaran'])
     ];
 }
 ?>
@@ -76,7 +72,7 @@ while ($row = mysqli_fetch_assoc($result_pengeluaran)) {
       background-position: center;
       min-height: 100vh;
     }
-/* === SIDEBAR (SAMA SEPERTI DASHBOARD) === */
+
 .sidebar {
   width: 240px;
   height: 100vh;
@@ -125,7 +121,6 @@ while ($row = mysqli_fetch_assoc($result_pengeluaran)) {
   background-color: rgba(255, 255, 255, 0.25);
 }
 
-/* === RESPONSIVE SIDEBAR === */
 @media (max-width: 992px) {
   .sidebar {
     left: -240px;
@@ -134,7 +129,6 @@ while ($row = mysqli_fetch_assoc($result_pengeluaran)) {
     left: 0;
   }
 }
-
 
 .overlay {
   position: fixed;
@@ -148,7 +142,6 @@ while ($row = mysqli_fetch_assoc($result_pengeluaran)) {
   display: block;
 }
 
-/* Mobile Header */
 .mobile-header {
   position: fixed;
   top: 0;
@@ -168,7 +161,6 @@ while ($row = mysqli_fetch_assoc($result_pengeluaran)) {
   transition: all 0.3s ease;
 }
 
-/* Mobile: Sidebar tersembunyi */
 @media (max-width: 992px) {
   .main-content {
     margin-left: 0 !important; 
@@ -192,19 +184,17 @@ while ($row = mysqli_fetch_assoc($result_pengeluaran)) {
     .filter-container {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;                     /* jarak antar elemen lebih rapat */
+  gap: 10px;
   justify-content: space-between;
   margin-bottom: 20px;
 }
 
 .filter-container .form-control,
 .filter-container .form-select {
-  flex: 1;                       /* bikin semua elemen sama lebar */
-  min-width: 220px;              /* batas minimum biar gak terlalu kecil */
-  max-width: 360px;              /* batas maksimum */
+  flex: 1;
+  min-width: 220px;
+  max-width: 360px;
 }
-
-  
 
     .card-pengeluaran {
       background: #fff;
@@ -226,7 +216,6 @@ while ($row = mysqli_fetch_assoc($result_pengeluaran)) {
     }
     .text-danger { font-weight: 600; }
 
-    /* SCROLL LIST */
     #pengeluaranList {
       max-height: 500px;
       overflow-y: auto;
@@ -308,10 +297,7 @@ while ($row = mysqli_fetch_assoc($result_pengeluaran)) {
     </a>
   </aside>
 
-  <!-- OVERLAY -->
   <div id="overlay" class="overlay"></div>
-
-  
 
   <!-- MAIN -->
   <main class="main-content">
@@ -355,7 +341,6 @@ while ($row = mysqli_fetch_assoc($result_pengeluaran)) {
     </div>
   </div>
 
-
     <!-- Filter -->
     <div class="filter-container d-flex flex-wrap gap-2 align-items-center justify-content-between">
       <input type="text" class="form-control" placeholder="Cari pengeluaran..." id="searchInput" style="max-width:360px;">
@@ -381,8 +366,6 @@ while ($row = mysqli_fetch_assoc($result_pengeluaran)) {
         <option value="Desember">Desember</option>
       </select>
     </div>
-    
-    <!-- Daftar Pengeluaran -->
     <div id="pengeluaranList"></div>
   </main>
 
@@ -484,7 +467,6 @@ while ($row = mysqli_fetch_assoc($result_pengeluaran)) {
 
     renderList(pengeluaranData);
 
-    // Sidebar Toggle (Hamburger)
     const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('overlay');
     const menuToggle = document.getElementById('menuToggle');

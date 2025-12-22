@@ -8,10 +8,10 @@ $tahun = isset($_GET['tahun']) ? max(2023, min(2025, (int)$_GET['tahun'])) : dat
 $pemasukan   = array_fill(0, 12, 0);
 $pengeluaran = array_fill(0, 12, 0);
 
-$bulan_map = ['january'=>0,'february'=>1,'march'=>2,'april'=>3,'may'=>4,'june'=>5,'july'=>6,'august'=>7,'september'=>8,'october'=>9,'november'=>10,'december'=>11];
+$bulan_map = ['Januari'=>0,'Februari'=>1,'Maret'=>2,'April'=>3,'Mei'=>4,'Juni'=>5,'Juli'=>6,'Agustus'=>7,'September'=>8,'Oktober'=>9,'November'=>10,'Desember'=>11];
 
 // Pemasukan
-$q1 = mysqli_prepare($conn, "SELECT LOWER(bulan_pembayaran) as bln, SUM(nominal_pembayaran) as total FROM pembayaran WHERE status_pembayaran='lunas' AND tahun_pembayaran=? GROUP BY bulan_pembayaran");
+$q1 = mysqli_prepare($conn, "SELECT (bulan_pembayaran) as bln, SUM(nominal_pembayaran) as total FROM pembayaran WHERE status_pembayaran='lunas' AND tahun_pembayaran=? GROUP BY bulan_pembayaran");
 mysqli_stmt_bind_param($q1, "i", $tahun);
 mysqli_stmt_execute($q1);
 $res1 = mysqli_stmt_get_result($q1);

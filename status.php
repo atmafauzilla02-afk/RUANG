@@ -1,8 +1,7 @@
 <?php
 session_start();
-require_once "koneksi/koneksi.php";   // <-- Koneksi kamu yang sudah benar
+require_once "koneksi/koneksi.php";
 
-// Cek login (wajib login dulu)
 if (!isset($_SESSION['id_pengguna'])) {
   header("Location: index.php");
   exit;
@@ -11,8 +10,6 @@ if (!isset($_SESSION['id_pengguna'])) {
 $id_warga = $_SESSION['id_warga'];
 $query = "SELECT ... FROM pembayaran WHERE id_warga = '$id_warga'";
 
-
-// Ambil data pembayaran milik warga yang login
 $query = "SELECT 
             id_pembayaran,
             jenis_pembayaran,
@@ -27,7 +24,6 @@ $query = "SELECT
 
 $result = mysqli_query($koneksi, $query);
 
-// Ambil daftar tahun untuk filter
 $tahun_query = "SELECT DISTINCT tahun_pembayaran FROM pembayaran WHERE id_warga = '$id_warga' ORDER BY tahun_pembayaran DESC";
 $tahun_result = mysqli_query($koneksi, $tahun_query);
 ?>
@@ -255,7 +251,6 @@ $tahun_result = mysqli_query($koneksi, $tahun_query);
 
                     <div class="modal-body">
 
-                      <!-- Judul iuran -->
                       <h5 class="text-center fw-bold mb-4">
                         <?= htmlspecialchars($row['jenis_pembayaran']) ?> –
                         <?= htmlspecialchars($row['bulan_pembayaran']) ?>
@@ -263,7 +258,6 @@ $tahun_result = mysqli_query($koneksi, $tahun_query);
                         (Rp<?= number_format($row['nominal_pembayaran'], 0, ',', '.') ?>)
                       </h5>
 
-                      <!-- Metode Pembayaran -->
                       <div class="mb-3">
                         <label class="form-label fw-semibold">Metode Pembayaran</label>
                         <div class="d-grid gap-2">
@@ -278,7 +272,6 @@ $tahun_result = mysqli_query($koneksi, $tahun_query);
                         </div>
                       </div>
 
-                      <!-- Transfer Bank -->
                       <div class="info-metode-bank" id="bank<?= $row['id_pembayaran'] ?>">
                         <div class="card border-0 shadow-sm rounded-4 mb-3 p-3">
                           <p class="fw-semibold mb-2">
@@ -291,8 +284,6 @@ $tahun_result = mysqli_query($koneksi, $tahun_query);
                         </div>
                       </div>
 
-
-                      <!-- Info Tunai (card kotak) -->
                       <div class="info-metode-tunai d-none" id="tunai<?= $row['id_pembayaran'] ?>">
                         <div class="card border-0 shadow-sm rounded-4 mb-3 p-3">
                           <p class="fw-semibold mb-2">
@@ -305,8 +296,6 @@ $tahun_result = mysqli_query($koneksi, $tahun_query);
                         </div>
                       </div>
 
-
-                      <!-- Form Upload -->
                       <div id="formUpload<?= $row['id_pembayaran'] ?>" class="upload-section">
                         <form action="aksi/upload_bukti.php" method="post" enctype="multipart/form-data">
                           <input type="hidden" name="id_pembayaran" value="<?= $row['id_pembayaran'] ?>">
@@ -327,7 +316,6 @@ $tahun_result = mysqli_query($koneksi, $tahun_query);
                 </div>
               </div>
             <?php endif; ?>
-
           <?php endwhile; ?>
         </tbody>
       </table>
@@ -336,7 +324,6 @@ $tahun_result = mysqli_query($koneksi, $tahun_query);
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <script>
-    // Filter
     document.querySelectorAll('#filterTahun, #filterBulan, #filterStatus, #filterJenis').forEach(el => {
       el.addEventListener('change', () => {
         const tahunFilter = document.getElementById('filterTahun').value.trim();
@@ -360,7 +347,6 @@ $tahun_result = mysqli_query($koneksi, $tahun_query);
       });
     });
 
-    // Sidebar Mobile
     document.getElementById('menuToggle').addEventListener('click', () => {
       document.getElementById('sidebar').classList.toggle('show');
       document.getElementById('overlay').classList.toggle('active');
@@ -377,22 +363,18 @@ $tahun_result = mysqli_query($koneksi, $tahun_query);
       const modal = this.closest('.modal');
       const modalId = modal.id.replace('modalPembayaran', '');
       
-      // Hapus class active dari semua tombol di modal ini
       modal.querySelectorAll('.metode-btn').forEach(b => b.classList.remove('active'));
       this.classList.add('active');
 
-      // Sembunyikan semua info & form dulu
       modal.querySelectorAll('.info-metode-bank, .info-metode-tunai, .upload-section').forEach(el => {
         el.classList.add('d-none');
       });
 
-      // Tampilkan sesuai pilihan
       if (this.dataset.metode === "bank") {
         document.getElementById('bank' + modalId).classList.remove('d-none');
-        document.getElementById('formUpload' + modalId).classList.remove('d-none'); // Form muncul
+        document.getElementById('formUpload' + modalId).classList.remove('d-none');
       } else if (this.dataset.metode === "tunai") {
         document.getElementById('tunai' + modalId).classList.remove('d-none');
-        // Form upload TIDAK MUNCUL untuk tunai
       }
     });
   });

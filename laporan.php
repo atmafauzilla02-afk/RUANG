@@ -21,7 +21,6 @@
       
     }
 
-    /* SIDEBAR */
     .sidebar {
       width: 240px;
       height: 100vh;
@@ -56,8 +55,6 @@
       justify-content: center; gap: 6px; transition: 0.2s;
     }
     .logout-btn:hover { background-color: #222; }
-
-    /* CONTENT */
     
     .content { margin-left: 260px; padding: 40px; transition: 0.3s; }
     .content.full { margin-left: 0; }
@@ -104,11 +101,8 @@
       .content { margin-left: 0; padding: 20px; margin-top: 62px; }
       .sidebar { left: -240px; }
       .sidebar.show { left: 0; }
-      
-
     }
 
-    
 .sidebar img {
   width: 110px;         
   display: block;
@@ -130,10 +124,7 @@
   width: 80px;         
   display: block;
 }
-   
-
-   
-  </style>
+</style>
 </head>
 <body>
    <!-- MOBILE HEADER -->
@@ -185,10 +176,6 @@
           <option value="November">November</option>
           <option value="Desember">Desember</option>
         </select>
-        
-
-        
-       
       </div>
     </div>
 
@@ -237,7 +224,7 @@
         }
 
         data.forEach(item => {
-            const fileUrl = item.path.replace('../', './'); // ../uploads → ./uploads
+            const fileUrl = item.path.replace('../', './');
             const safePath = fileUrl.replace(/ /g, '%20');
 
             container.innerHTML += `
