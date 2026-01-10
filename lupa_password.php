@@ -80,7 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($stmt->execute()) {
                 unset($_SESSION['reset_otp'], $_SESSION['reset_time'], $_SESSION['reset_id_pengguna'], $_SESSION['reset_nik']);
 
-                echo "<script>alert('Password berhasil diubah! Silakan login kembali.'); window.location.href = '../index.php';</script>";
+                echo "<script>alert('Password berhasil diubah! Silakan login kembali.'); window.location.href = 'index.php';</script>";
                 exit;
             } else {
                 $error = 'Gagal mengubah password!';
@@ -121,7 +121,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           <input type="text" name="nik" placeholder="Masukkan NIK" required>
         </div>
         <button type="submit" class="btn">Kirim OTP</button>
-        <a href="../index.php" class="back-link">Kembali ke Login</a>
+        <a href="index.php" class="back-link">Kembali ke Login</a>
       </form>
     <?php elseif (isset($success_step1) && !isset($success_step2)): ?>
       <!-- Step 2: Instruksi Kirim OTP via wa.me dan Verifikasi -->

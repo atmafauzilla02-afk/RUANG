@@ -173,94 +173,159 @@ $pengeluaran_tahun = mysqli_fetch_array(mysqli_query($koneksi,
         </div>
       </div>
 
-        <!-- GRAFIK TAHUN INI SAJA -->
     <div class="chart-card p-4 bg-white rounded shadow-sm">
-      <h5 class="fw-semibold mb-4 text-center">
-        Grafik Pemasukan & Pengeluaran Tahun <span class="text-primary"><?= date('Y') ?></span>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <button id="btnPrevYear" class="btn btn-outline-primary btn-sm" disabled>
+        <i class="fa-solid fa-chevron-left"></i> Tahun Sebelumnya
+      </button>
+      
+      <h5 class="fw-semibold mb-0 text-center">
+        Grafik Pemasukan & Pengeluaran Tahun <span class="text-primary" id="currentYear"><?= date('Y') ?></span>
       </h5>
-
-      <div class="position-relative" style="height:380px;">
-        <canvas id="chartArea"></canvas>
-      </div>
+      
+      <button id="btnNextYear" class="btn btn-outline-primary btn-sm" disabled>
+        Tahun Berikutnya <i class="fa-solid fa-chevron-right"></i>
+      </button>
     </div>
+
+    <div class="position-relative" style="height:380px;">
+      <canvas id="chartArea"></canvas>
+    </div>
+  </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
-(async function() {
-    const tahun = <?= date('Y') ?>;
+(function() {
+    const tahunSekarang = <?= date('Y') ?>;
+    const batasTahunMin = tahunSekarang - 2;
+    let tahunTerpilih = tahunSekarang;
     let chart = null;
 
-    try {
-        const res = await fetch(`chart_data.php?tahun=${tahun}`);
-        const data = await res.json();
+    const btnPrev = document.getElementById('btnPrevYear');
+    const btnNext = document.getElementById('btnNextYear');
+    const spanTahun = document.getElementById('currentYear');
 
-        const totalMasuk = data.pemasukan.reduce((a,b) => a + b, 0);
-        const totalKeluar = data.pengeluaran.reduce((a,b) => a + b, 0);
-
-        if (totalMasuk === 0 && totalKeluar === 0) {
-            document.querySelector('.chart-card .position-relative').innerHTML = `
-                <div class="text-center py-5 text-muted">
-                    <i class="fa-solid fa-chart-bar fa-3x mb-3 opacity-50"></i>
-                    <p class="mb-0 fw-medium fs-5">Belum ada data pemasukan atau pengeluaran di tahun ${tahun}</p>
-                </div>`;
-            return;
-        }
-
-        const ctx = document.getElementById('chartArea').getContext('2d');
-
-        chart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'],
-                datasets: [
-                    {
-                        label: 'Pemasukan (Rp)',
-                        data: data.pemasukan,
-                        backgroundColor: '#27ae60',
-                        borderColor: '#1e8449',
-                        borderRadius: 6,
-                        borderSkipped: false
-                    },
-                    {
-                        label: 'Pengeluaran (Rp)',
-                        data: data.pengeluaran,
-                        backgroundColor: '#e74c3c',
-                        borderColor: '#c0392b',
-                        borderRadius: 6,
-                        borderSkipped: false
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { position: 'bottom' },
-                    tooltip: {
-                        callbacks: {
-                            label: ctx => ctx.dataset.label + ': Rp' + ctx.parsed.y.toLocaleString('id-ID')
-                        }
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: { callback: v => 'Rp' + v.toLocaleString('id-ID') },
-                        title: { display: true, text: '' }
-                    },
-                    x: { title: { display: true, text: '' } }
-                }
-            }
-        });
-
-    } catch (err) {
-        console.error('Gagal load grafik:', err);
-        document.querySelector('.chart-card .position-relative').innerHTML = `
-            <div class="text-center py-5 text-danger">
-                <i class="fa-solid fa-triangle-exclamation fa-3x mb-3"></i>
-                <p>Gagal memuat grafik</p>
-            </div>`;
+    function updateNavigationButtons() {
+        btnPrev.disabled = (tahunTerpilih <= batasTahunMin);
+        btnNext.disabled = (tahunTerpilih >= tahunSekarang);
     }
+
+    async function loadChart(tahun) {
+        const chartContainer = document.querySelector('.chart-card .position-relative');
+      
+        chartContainer.innerHTML = `
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-3 text-muted">Memuat data tahun ${tahun}...</p>
+            </div>`;
+
+        try {
+            const res = await fetch(`chart_data.php?tahun=${tahun}`);
+            const data = await res.json();
+
+            if (data.error) {
+                throw new Error(data.error);
+            }
+
+            const totalMasuk = data.pemasukan.reduce((a,b) => a + b, 0);
+            const totalKeluar = data.pengeluaran.reduce((a,b) => a + b, 0);
+
+            chartContainer.innerHTML = '<canvas id="chartArea"></canvas>';
+
+            if (totalMasuk === 0 && totalKeluar === 0) {
+                chartContainer.innerHTML = `
+                    <div class="text-center py-5 text-muted">
+                        <i class="fa-solid fa-chart-bar fa-3x mb-3 opacity-50"></i>
+                        <p class="mb-0 fw-medium fs-5">Belum ada data pemasukan atau pengeluaran di tahun ${tahun}</p>
+                    </div>`;
+                return;
+            }
+
+            const ctx = document.getElementById('chartArea').getContext('2d');
+
+            if (chart) {
+                chart.destroy();
+            }
+
+            chart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'],
+                    datasets: [
+                        {
+                            label: 'Pemasukan (Rp)',
+                            data: data.pemasukan,
+                            backgroundColor: '#27ae60',
+                            borderColor: '#1e8449',
+                            borderRadius: 6,
+                            borderSkipped: false
+                        },
+                        {
+                            label: 'Pengeluaran (Rp)',
+                            data: data.pengeluaran,
+                            backgroundColor: '#e74c3c',
+                            borderColor: '#c0392b',
+                            borderRadius: 6,
+                            borderSkipped: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' },
+                        tooltip: {
+                            callbacks: {
+                                label: ctx => ctx.dataset.label + ': Rp' + ctx.parsed.y.toLocaleString('id-ID')
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { callback: v => 'Rp' + v.toLocaleString('id-ID') },
+                            title: { display: true, text: '' }
+                        },
+                        x: { title: { display: true, text: '' } }
+                    }
+                }
+            });
+
+        } catch (err) {
+            console.error('Gagal load grafik:', err);
+            chartContainer.innerHTML = `
+                <div class="text-center py-5 text-danger">
+                    <i class="fa-solid fa-triangle-exclamation fa-3x mb-3"></i>
+                    <p class="mb-2 fw-semibold">Gagal memuat grafik</p>
+                    <small class="text-muted">${err.message}</small>
+                </div>`;
+        }
+    }
+
+    btnPrev.addEventListener('click', async () => {
+        if (tahunTerpilih > batasTahunMin) {
+            tahunTerpilih--;
+            spanTahun.textContent = tahunTerpilih;
+            updateNavigationButtons();
+            await loadChart(tahunTerpilih);
+        }
+    });
+
+    btnNext.addEventListener('click', async () => {
+        if (tahunTerpilih < tahunSekarang) {
+            tahunTerpilih++;
+            spanTahun.textContent = tahunTerpilih;
+            updateNavigationButtons();
+            await loadChart(tahunTerpilih);
+        }
+    });
+
+    loadChart(tahunTerpilih).then(() => {
+        updateNavigationButtons();
+    });
 })();
 </script>
 
