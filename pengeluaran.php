@@ -11,48 +11,85 @@ if (!$koneksi) {
     die("Koneksi gagal: " . mysqli_connect_error());
 }
 
-$bulan_eng = ['january','february','march','april','may','june','july','august','september','october','november','december'];
-$bulan_ini = $bulan_eng[date('n') - 1];
-$tahun_ini = date('Y');
+$tahun_ini = (int)date('Y');
 
-$masuk = mysqli_fetch_array(mysqli_query($koneksi, 
+$stmt = mysqli_prepare($koneksi, 
     "SELECT COALESCE(SUM(nominal_pembayaran), 0) AS total 
      FROM pembayaran 
-     WHERE status_pembayaran = 'lunas'"))[0] ?? 0;
+     WHERE status_pembayaran = 'lunas' 
+       AND tahun_pembayaran = ?");
+if (!$stmt) die("Error prepare pemasukan: " . mysqli_error($koneksi));
 
-$keluar = mysqli_fetch_array(mysqli_query($koneksi, 
+mysqli_stmt_bind_param($stmt, "i", $tahun_ini);
+mysqli_stmt_execute($stmt);
+$result = mysqli_stmt_get_result($stmt);
+$masuk = mysqli_fetch_array($result)['total'] ?? 0;
+mysqli_stmt_close($stmt);
+
+$stmt = mysqli_prepare($koneksi, 
     "SELECT COALESCE(SUM(nominal_pengeluaran), 0) AS total 
      FROM pengeluaran 
      WHERE status_persetujuan = 'Disetujui'
-       AND YEAR(tanggal_pengeluaran) = '$tahun_ini'"))['total'] ?? 0;
+       AND YEAR(tanggal_pengeluaran) = ?");
+if (!$stmt) die("Error prepare pengeluaran: " . mysqli_error($koneksi));
 
-$saldo = $masuk - $keluar;
+mysqli_stmt_bind_param($stmt, "i", $tahun_ini);
+mysqli_stmt_execute($stmt);
+$result = mysqli_stmt_get_result($stmt);
+$keluar = mysqli_fetch_array($result)['total'] ?? 0;
+mysqli_stmt_close($stmt);
 
-$query_pengeluaran = "
+$stmt_masuk_all = mysqli_query($koneksi, 
+    "SELECT COALESCE(SUM(nominal_pembayaran), 0) AS total 
+     FROM pembayaran 
+     WHERE status_pembayaran = 'lunas'");
+$masuk_alltime = mysqli_fetch_array($stmt_masuk_all)['total'] ?? 0;
+
+$stmt_keluar_all = mysqli_query($koneksi, 
+    "SELECT COALESCE(SUM(nominal_pengeluaran), 0) AS total 
+     FROM pengeluaran 
+     WHERE status_persetujuan = 'Disetujui'");
+$keluar_alltime = mysqli_fetch_array($stmt_keluar_all)['total'] ?? 0;
+
+$saldo = $masuk_alltime - $keluar_alltime;
+
+$stmt = mysqli_prepare($koneksi, "
     SELECT nama_pengeluaran, keterangan_pengeluaran, nominal_pengeluaran, 
            tanggal_pengeluaran, jenis_pengeluaran 
     FROM pengeluaran 
     WHERE status_persetujuan = 'Disetujui' 
-      AND YEAR(tanggal_pengeluaran) = '$tahun_ini'
-    ORDER BY tanggal_pengeluaran DESC";
+      AND YEAR(tanggal_pengeluaran) = ?
+    ORDER BY tanggal_pengeluaran DESC");
+if (!$stmt) die("Error prepare detail: " . mysqli_error($koneksi));
 
-$result_pengeluaran = mysqli_query($koneksi, $query_pengeluaran);
+mysqli_stmt_bind_param($stmt, "i", $tahun_ini);
+mysqli_stmt_execute($stmt);
+$result_pengeluaran = mysqli_stmt_get_result($stmt);
 $pengeluaranData = [];
+
+$bulanIndo = [
+    'January'=>'Januari', 'February'=>'Februari', 'March'=>'Maret', 
+    'April'=>'April', 'May'=>'Mei', 'June'=>'Juni',
+    'July'=>'Juli', 'August'=>'Agustus', 'September'=>'September', 
+    'October'=>'Oktober', 'November'=>'November', 'December'=>'Desember'
+];
 
 while ($row = mysqli_fetch_assoc($result_pengeluaran)) {
     $tanggal = date('d F Y', strtotime($row['tanggal_pengeluaran']));
-    $bulanIndo = ['January'=>'Januari','February'=>'Februari','March'=>'Maret','April'=>'April','May'=>'Mei','June'=>'Juni',
-                  'July'=>'Juli','August'=>'Agustus','September'=>'September','October'=>'Oktober','November'=>'November','December'=>'Desember'];
     $tanggal = strtr($tanggal, $bulanIndo);
 
     $pengeluaranData[] = [
-        'judul'     => $row['nama_pengeluaran'],
-        'deskripsi' => $row['keterangan_pengeluaran'] ?: '-',
+        'judul'     => htmlspecialchars($row['nama_pengeluaran'], ENT_QUOTES, 'UTF-8'),
+        'deskripsi' => htmlspecialchars($row['keterangan_pengeluaran'] ?: '-', ENT_QUOTES, 'UTF-8'),
         'nominal'   => (int)$row['nominal_pengeluaran'],
         'tanggal'   => $tanggal,
         'kategori'  => strtolower($row['jenis_pengeluaran'])
     ];
 }
+mysqli_stmt_close($stmt);
+
+$tanggal_sekarang = date('d F Y');
+$tanggal_sekarang = strtr($tanggal_sekarang, $bulanIndo);
 ?>
 
 <!DOCTYPE html>
@@ -303,8 +340,8 @@ while ($row = mysqli_fetch_assoc($result_pengeluaran)) {
   <!-- MAIN -->
   <main class="main-content">
     <div class="text-center mb-4">
-      <h2 class="fw-bold">Pemasukan dan Pengeluaran Tahun <?= $tahun_ini ?></h2>
-      <p class="text-muted">Lihat rincian pemasukan dan pengeluaran pertahun.</p>
+      <h2 class="fw-bold">Rincian Keuangan Tahun <?= $tahun_ini ?></h2>
+      <p class="text-muted">Lihat detail pemasukan dan pengeluaran tahun ini</p>
     </div>
 
    <!-- Info Box (3 Kolom) -->
@@ -334,11 +371,11 @@ while ($row = mysqli_fetch_assoc($result_pengeluaran)) {
     <div class="col-lg-4 col-md-12">
       <div class="info-card h-100">
         <div class="d-flex justify-content-between align-items-center">
-          <span>Saldo Akhir Tahun Ini</span>
+          <span>Saldo Kas Saat Ini</span>
           <i class="fa-solid fa-wallet icon text-warning"></i>
         </div>
         <h4>Rp<?= number_format($saldo, 0, ',', '.') ?></h4>
-        <small class="text-muted">Sisa kas per <?= date('d F Y') ?></small>
+        <small class="text-muted">Sisa kas per <?= $tanggal_sekarang ?></small>
       </div>
     </div>
   </div>
@@ -369,11 +406,9 @@ while ($row = mysqli_fetch_assoc($result_pengeluaran)) {
       </select>
     </div>
     
-    <!-- Daftar Pengeluaran -->
     <div id="pengeluaranList"></div>
   </main>
 
-  <!-- Modal Detail -->
   <div class="modal fade" id="detailModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content rounded-4">
@@ -484,11 +519,6 @@ while ($row = mysqli_fetch_assoc($result_pengeluaran)) {
       sidebar.classList.remove('show');
       overlay.classList.remove('active');
     });
-
-    function logout() {
-      alert("Logout berhasil!");
-      location.href = "index.html";
-    }
   </script>
 </body>
 </html>

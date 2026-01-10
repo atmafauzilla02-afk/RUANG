@@ -15,7 +15,7 @@ if ($nik === '' || $password === '') {
             alert('NIK dan password harus diisi!');
             window.location.href = '../index.php';
           </script>";
-    exit;
+    exit;    
 }
 
 $stmt = $koneksi->prepare("SELECT id_pengguna, nik, nama, password, role FROM pengguna WHERE nik = ? LIMIT 1");

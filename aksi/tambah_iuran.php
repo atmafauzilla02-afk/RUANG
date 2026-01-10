@@ -15,8 +15,6 @@ if (isset($_POST['simpan'])) {
         $nominal = 30000;
     }
 
-
-    /* Upload Foto */
     $bukti_pembayaran = null;
 
     if (isset($_FILES['bukti_pembayaran']) && $_FILES['bukti_pembayaran']['error'] == 0) {
