@@ -13,12 +13,31 @@ $alamat  = trim($_POST['alamat'] ?? '');
 $no_telp = trim($_POST['no_telp'] ?? '');
 
 if ($nama === '' || $nik === '' || $alamat === '' || $no_telp === '') {
-    echo "<script>alert('Semua field wajib diisi!'); window.history.back();</script>";
+    echo "<script>alert('❌ Semua wajib diisi!'); window.history.back();</script>";
     exit;
 }
 
-if (!preg_match('/^\d{16}$/', $nik)) {
-    echo "<script>alert('NIK harus 16 digit angka!'); window.history.back();</script>";
+if (!preg_match('/^[0-9]{16}$/', $nik)) {
+    echo "<script>
+        alert('❌ NIK harus berisi 16 digit angka!\\n\\nContoh: 1234567890123456');
+        window.history.back();
+    </script>";
+    exit;
+}
+
+if (!preg_match('/^[0-9]{10,20}$/', $no_telp)) {
+    echo "<script>
+        alert('❌ Nomor telepon harus berisi angka!');
+        window.history.back();
+    </script>";
+    exit;
+}
+
+if (!preg_match('/^[a-zA-Z\s.\',-]+$/', $nama)) {
+    echo "<script>
+        alert('❌ Nama hanya boleh berisi huruf, spasi, dan karakter titik, koma, apostrof, atau strip!');
+        window.history.back();
+    </script>";
     exit;
 }
 
@@ -29,42 +48,59 @@ $result = $stmt->get_result();
 
 if ($result->num_rows > 0) {
     $stmt->close();
-    echo "<script>alert('NIK $nik sudah terdaftar! Gunakan NIK lain.'); window.history.back();</script>";
+    echo "<script>
+        alert('❌ NIK $nik sudah terdaftar!');
+        window.history.back();
+    </script>";
     exit;
 }
 $stmt->close();
 
 $password_hash = password_hash($nik, PASSWORD_DEFAULT);
 
-$stmt = $koneksi->prepare("
-    INSERT INTO pengguna 
-    (nik, nama, alamat, no_telp, password, role, status) 
-    VALUES 
-    (?, ?, ?, ?, ?, 'warga', 'Aktif')
-");
-$stmt->bind_param("sssss", $nik, $nama, $alamat, $no_telp, $password_hash);
+$koneksi->begin_transaction();
 
-if (!$stmt->execute()) {
+try {
+    $stmt = $koneksi->prepare("
+        INSERT INTO pengguna 
+        (nik, nama, alamat, no_telp, password, role, status) 
+        VALUES 
+        (?, ?, ?, ?, ?, 'warga', 'Aktif')
+    ");
+    $stmt->bind_param("sssss", $nik, $nama, $alamat, $no_telp, $password_hash);
+    
+    if (!$stmt->execute()) {
+        throw new Exception("Gagal menambah akun pengguna: " . $stmt->error);
+    }
+    
+    $id_pengguna_baru = $koneksi->insert_id;
     $stmt->close();
-    echo "<script>alert('Gagal menambah akun pengguna!'); window.history.back();</script>";
-    exit;
-}
-
-$id_pengguna_baru = $koneksi->insert_id;
-$stmt->close();
-
-$stmt = $koneksi->prepare("INSERT INTO warga (id_pengguna) VALUES (?)");
-$stmt->bind_param("i", $id_pengguna_baru);
-
-if ($stmt->execute()) {
+    
+    $stmt = $koneksi->prepare("INSERT INTO warga (id_pengguna) VALUES (?)");
+    $stmt->bind_param("i", $id_pengguna_baru);
+    
+    if (!$stmt->execute()) {
+        throw new Exception("Gagal menambah data warga: " . $stmt->error);
+    }
+    
     $stmt->close();
+    
+    $koneksi->commit();
+    
     echo "<script>
-        alert('Warga berhasil ditambahkan!');
+        alert('✅ Warga berhasil ditambahkan!\\n\\nNama: $nama\\nNIK: $nik');
         window.location.href = '../kelola_warga.php';
     </script>";
-} else {
-    $koneksi->query("DELETE FROM pengguna WHERE id_pengguna = $id_pengguna_baru");
-    $stmt->close();
-    echo "<script>alert('Gagal menambah data warga! Silakan coba lagi.'); window.history.back();</script>";
+    
+} catch (Exception $e) {
+
+    $koneksi->rollback();
+    
+    echo "<script>
+        alert('❌ Gagal menambah data warga!\\n\\nError: " . addslashes($e->getMessage()) . "');
+        window.history.back();
+    </script>";
 }
+
+$koneksi->close();
 ?>

@@ -11,7 +11,6 @@ $kebersihan = $_POST['nominal_kebersihan'];
 $jenis = ['kas', 'keamanan', 'kebersihan'];
 $nominal = [$kas, $keamanan, $kebersihan];
 
-// Cek apakah salah satu sudah ada
 foreach($jenis as $j){
     $cek = mysqli_num_rows(mysqli_query($koneksi, "SELECT id_pembayaran FROM pembayaran WHERE jenis_pembayaran='$j' AND bulan_pembayaran='$bulan' AND tahun_pembayaran='$tahun'"));
     if($cek > 0){
@@ -20,7 +19,6 @@ foreach($jenis as $j){
     }
 }
 
-// Ambil semua warga
 $warga = mysqli_query($koneksi, "SELECT id_warga FROM warga");
 
 $berhasil = 0;

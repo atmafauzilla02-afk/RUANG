@@ -18,7 +18,6 @@ $keterangan = trim($keterangan);
 $nominal    = trim($nominal);
 $kategori   = trim($kategori);
 
-// Validasi input
 if ($judul === '' || $keterangan === '' || $nominal === '' || $kategori === '') {
     echo json_encode(['status' => 'error', 'message' => 'Semua field wajib diisi']);
     ob_end_flush();
@@ -84,7 +83,6 @@ if ($nominal > $saldo_kas) {
     exit;
 }
 
-// === INSERT KE DATABASE (jika saldo mencukupi) ===
 $sql = "INSERT INTO pengeluaran (nama_pengeluaran, keterangan_pengeluaran, nominal_pengeluaran, jenis_pengeluaran, status_persetujuan, tanggal_pengeluaran) 
         VALUES (?, ?, ?, ?, 'Menunggu', CURDATE())";
 

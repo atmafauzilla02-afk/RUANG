@@ -1,13 +1,11 @@
 <?php
-// aksi/get_laporan.php
 header('Content-Type: application/json');
 
-require_once '../koneksi/koneksi.php'; // sesuaikan path
+require_once '../koneksi/koneksi.php';
 
 $tahun = $_GET['tahun'] ?? '';
 $bulan = $_GET['bulan'] ?? '';
 
-// Validasi input
 $tahun = $tahun === '' ? '' : (int)$tahun;
 $bulan = $bulan === '' ? '' : trim($bulan);
 
@@ -33,7 +31,6 @@ try {
         $types .= 's';
     }
 
-    // Urutkan dari yang terbaru
     $sql .= " ORDER BY tahun DESC, bulan_angka DESC";
 
     $stmt = $koneksi->prepare($sql);
@@ -45,7 +42,6 @@ try {
 
     $data = [];
     while ($row = $result->fetch_assoc()) {
-        // Pastikan file masih ada di server (opsional, tapi bagus)
         if (file_exists($row['path'])) {
             $data[] = [
                 'bulan_tahun' => $row['bulan_tahun'],
@@ -53,14 +49,6 @@ try {
                 'path'        => $row['path']
             ];
         }
-        // Kalau file fisiknya hilang, tetap tampilkan tapi kasih tanda (opsional)
-        // else {
-        //     $data[] = [
-        //         'bulan_tahun' => $row['bulan_tahun'] . ' (File hilang)',
-        //         'file'        => $row['file'],
-        //         'path'        => '#'
-        //     ];
-        // }
     }
 
     echo json_encode($data);

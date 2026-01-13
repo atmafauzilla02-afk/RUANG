@@ -1,7 +1,6 @@
 <?php
 header('Content-Type: application/json');
 
-// Koneksi database
 $conn = mysqli_connect("localhost", "root", "", "ruang");
 if (!$conn) {
     exit(json_encode([
@@ -11,24 +10,20 @@ if (!$conn) {
     ]));
 }
 
-// Validasi dan sanitasi input tahun
 $tahun = isset($_GET['tahun']) ? (int)$_GET['tahun'] : date('Y');
 if ($tahun < 2000 || $tahun > 2100) {
     $tahun = date('Y');
 }
 
-// Inisialisasi array
 $pemasukan   = array_fill(0, 12, 0);
 $pengeluaran = array_fill(0, 12, 0);
 
-// Mapping bulan
 $bulan_map = [
     'Januari' => 0, 'Februari' => 1, 'Maret' => 2, 'April' => 3,
     'Mei' => 4, 'Juni' => 5, 'Juli' => 6, 'Agustus' => 7,
     'September' => 8, 'Oktober' => 9, 'November' => 10, 'Desember' => 11
 ];
 
-// Query Pemasukan
 $q1 = mysqli_prepare($conn, "SELECT bulan_pembayaran as bln, SUM(nominal_pembayaran) as total FROM pembayaran WHERE status_pembayaran='lunas' AND tahun_pembayaran=? GROUP BY bulan_pembayaran");
 
 if (!$q1) {
@@ -60,7 +55,6 @@ while ($r = mysqli_fetch_assoc($res1)) {
 }
 mysqli_stmt_close($q1);
 
-// Query Pengeluaran
 $q2 = mysqli_prepare($conn, "SELECT (MONTH(tanggal_pengeluaran)-1) as idx, SUM(nominal_pengeluaran) as total FROM pengeluaran WHERE status_persetujuan='Disetujui' AND YEAR(tanggal_pengeluaran)=? GROUP BY MONTH(tanggal_pengeluaran)");
 
 if (!$q2) {
@@ -93,10 +87,8 @@ while ($r = mysqli_fetch_assoc($res2)) {
 }
 mysqli_stmt_close($q2);
 
-// Tutup koneksi
 mysqli_close($conn);
 
-// Return response
 echo json_encode([
     'tahun' => $tahun,
     'pemasukan' => $pemasukan, 

@@ -7,7 +7,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $nama     = trim($_POST['nama']);
     $nik      = trim($_POST['nik']);
     $alamat   = trim($_POST['alamat']);
-    $no_telp  = preg_replace('/[^0-9]/', '', $_POST['no_telp']); // hanya angka
+    $no_telp  = preg_replace('/[^0-9]/', '', $_POST['no_telp']);
 
     if (empty($nama) || empty($nik) || strlen($nik) != 16) {
         header("Location: ../kelola_warga.php?edit=$id&error=Data tidak valid");

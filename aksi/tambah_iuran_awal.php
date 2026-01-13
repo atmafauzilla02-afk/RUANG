@@ -8,7 +8,6 @@ $bulan    = $_POST['bulan'];
 $tahun    = $_POST['tahun'];
 $nominal  = $_POST['nominal'];
 
-/* CEK APAKAH SUDAH ADA IURAN YANG SAMA */
 $cek = mysqli_query($koneksi, "
     SELECT * FROM pembayaran 
     WHERE id_warga='$id_warga' 
@@ -26,7 +25,6 @@ if (mysqli_num_rows($cek) > 0) {
     exit;
 }
 
-/* INSERT JIKA TIDAK ADA DUPLIKAT */
 mysqli_query($koneksi, "
     INSERT INTO pembayaran 
     (id_warga, jenis_pembayaran, bulan_pembayaran, tahun_pembayaran, nominal_pembayaran, status_pembayaran)

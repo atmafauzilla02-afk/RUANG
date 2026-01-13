@@ -15,140 +15,228 @@ if (!isset($_POST['bulan']) || empty(trim($_POST['bulan']))) {
     exit;
 }
 
-$bulan_tahun = trim($_POST['bulan']); // "Januari 2025"
-list($namaBulan, $tahun) = explode(' ', $bulan_tahun);
+$bulan_tahun = trim($_POST['bulan']);
+$parts = explode(' ', $bulan_tahun);
+
+if (count($parts) !== 2) {
+    echo json_encode(['success' => false, 'message' => 'Format bulan tidak valid']);
+    exit;
+}
+
+list($namaBulan, $tahun) = $parts;
+$tahunInt = (int)$tahun;
+
+$tahun_sekarang = (int)date('Y');
+$tahun_minimal = $tahun_sekarang - 2;
+
+if ($tahunInt < $tahun_minimal || $tahunInt > $tahun_sekarang) {
+    ob_end_clean();
+    echo json_encode([
+        'success' => false, 
+        'message' => "Laporan hanya dapat digenerate untuk tahun $tahun_minimal - $tahun_sekarang"
+    ]);
+    exit;
+}
 
 $daftarBulan = [
-    'Januari'   => '01', 'Februari' => '02', 'Maret'    => '03',
-    'April'     => '04', 'Mei'      => '05', 'Juni'     => '06',
-    'Juli'      => '07', 'Agustus'  => '08', 'September'=> '09',
-    'Oktober'   => '10', 'November' => '11', 'Desember' => '12'
+    'Januari'   => 1,  'Februari' => 2,  'Maret'    => 3,
+    'April'     => 4,  'Mei'      => 5,  'Juni'     => 6,
+    'Juli'      => 7,  'Agustus'  => 8,  'September'=> 9,
+    'Oktober'   => 10, 'November' => 11, 'Desember' => 12
+];
+
+$bulanIndo = [
+    'January'=>'Januari', 'February'=>'Februari', 'March'=>'Maret', 
+    'April'=>'April', 'May'=>'Mei', 'June'=>'Juni',
+    'July'=>'Juli', 'August'=>'Agustus', 'September'=>'September', 
+    'October'=>'Oktober', 'November'=>'November', 'December'=>'Desember'
 ];
 
 if (!isset($daftarBulan[$namaBulan])) {
+    ob_end_clean();
     echo json_encode(['success' => false, 'message' => 'Nama bulan tidak valid']);
     exit;
 }
 
 $bulanAngka = $daftarBulan[$namaBulan];
-$namaFile   = "Laporan_" . $namaBulan . "_" . $tahun . ".pdf";
+$bulanAngkaStr = str_pad($bulanAngka, 2, '0', STR_PAD_LEFT);
+
+$namaFile   = "Laporan_" . $namaBulan . "_" . $tahunInt . ".pdf";
 $folder     = "../uploads/laporan/";
 $path       = $folder . $namaFile;
 
 if (!is_dir($folder)) mkdir($folder, 0755, true);
 
 $tanggal_cetak_sekarang = date('d F Y');
+$tanggal_cetak_sekarang = strtr($tanggal_cetak_sekarang, $bulanIndo);
 
-// ===================================================================
-// 1. HITUNG SALDO AWAL (Akumulasi dari SEMUA transaksi sebelum bulan ini)
-// ===================================================================
-$bulanAngkaInt = (int)$bulanAngka;
-$tahunInt = (int)$tahun;
-
-// Hitung TOTAL PEMASUKAN dari semua transaksi SEBELUM bulan laporan
-$sql_pemasukan_sebelumnya = "
+$sql_pemasukan_tahun_lalu = "
     SELECT COALESCE(SUM(nominal_pembayaran), 0) as total 
     FROM pembayaran 
     WHERE status_pembayaran = 'lunas'
-    AND (
-        (CAST(tahun_pembayaran AS UNSIGNED) < ?) 
-        OR (
-            CAST(tahun_pembayaran AS UNSIGNED) = ? 
-            AND MONTH(STR_TO_DATE(CONCAT('01 ', bulan_pembayaran, ' ', tahun_pembayaran), '%d %M %Y')) < ?
-        )
-    )
+      AND CAST(tahun_pembayaran AS UNSIGNED) < ?
 ";
-$stmt_in_prev = $koneksi->prepare($sql_pemasukan_sebelumnya);
-$stmt_in_prev->bind_param("iii", $tahunInt, $tahunInt, $bulanAngkaInt);
-$stmt_in_prev->execute();
-$total_pemasukan_sebelumnya = $stmt_in_prev->get_result()->fetch_assoc()['total'];
+$stmt1 = $koneksi->prepare($sql_pemasukan_tahun_lalu);
+if (!$stmt1) {
+    ob_end_clean();
+    echo json_encode(['success' => false, 'message' => 'Error prepare: ' . $koneksi->error]);
+    exit;
+}
+$stmt1->bind_param("i", $tahunInt);
+$stmt1->execute();
+$pemasukan_tahun_lalu = $stmt1->get_result()->fetch_assoc()['total'];
+$stmt1->close();
 
-// Hitung TOTAL PENGELUARAN dari semua transaksi SEBELUM bulan laporan
+$sql_pemasukan_bulan_lalu = "
+    SELECT COALESCE(SUM(nominal_pembayaran), 0) as total 
+    FROM pembayaran 
+    WHERE status_pembayaran = 'lunas'
+      AND CAST(tahun_pembayaran AS UNSIGNED) = ?
+      AND bulan_pembayaran IN (?)
+";
+
+$bulan_sebelumnya = [];
+foreach ($daftarBulan as $nama => $angka) {
+    if ($angka < $bulanAngka) {
+        $bulan_sebelumnya[] = "'" . $nama . "'";
+    }
+}
+
+if (count($bulan_sebelumnya) > 0) {
+    $bulan_in_clause = implode(',', $bulan_sebelumnya);
+    $sql_pemasukan_bulan_lalu_final = "
+        SELECT COALESCE(SUM(nominal_pembayaran), 0) as total 
+        FROM pembayaran 
+        WHERE status_pembayaran = 'lunas'
+          AND CAST(tahun_pembayaran AS UNSIGNED) = ?
+          AND bulan_pembayaran IN ($bulan_in_clause)
+    ";
+    $stmt2 = $koneksi->prepare($sql_pemasukan_bulan_lalu_final);
+    if (!$stmt2) {
+        ob_end_clean();
+        echo json_encode(['success' => false, 'message' => 'Error prepare: ' . $koneksi->error]);
+        exit;
+    }
+    $stmt2->bind_param("i", $tahunInt);
+    $stmt2->execute();
+    $pemasukan_bulan_lalu = $stmt2->get_result()->fetch_assoc()['total'];
+    $stmt2->close();
+} else {
+    $pemasukan_bulan_lalu = 0;
+}
+
+$total_pemasukan_sebelumnya = $pemasukan_tahun_lalu + $pemasukan_bulan_lalu;
+
 $sql_pengeluaran_sebelumnya = "
     SELECT COALESCE(SUM(nominal_pengeluaran), 0) as total 
     FROM pengeluaran 
     WHERE status_persetujuan = 'Disetujui'
-    AND (
-        (YEAR(tanggal_pengeluaran) < ?) 
-        OR (YEAR(tanggal_pengeluaran) = ? AND MONTH(tanggal_pengeluaran) < ?)
-    )
+      AND (
+          YEAR(tanggal_pengeluaran) < ? 
+          OR (YEAR(tanggal_pengeluaran) = ? AND MONTH(tanggal_pengeluaran) < ?)
+      )
 ";
-$stmt_out_prev = $koneksi->prepare($sql_pengeluaran_sebelumnya);
-$stmt_out_prev->bind_param("iii", $tahunInt, $tahunInt, $bulanAngkaInt);
-$stmt_out_prev->execute();
-$total_pengeluaran_sebelumnya = $stmt_out_prev->get_result()->fetch_assoc()['total'];
+$stmt3 = $koneksi->prepare($sql_pengeluaran_sebelumnya);
+if (!$stmt3) {
+    ob_end_clean();
+    echo json_encode(['success' => false, 'message' => 'Error prepare: ' . $koneksi->error]);
+    exit;
+}
+$stmt3->bind_param("iii", $tahunInt, $tahunInt, $bulanAngka);
+$stmt3->execute();
+$total_pengeluaran_sebelumnya = $stmt3->get_result()->fetch_assoc()['total'];
+$stmt3->close();
 
-// SALDO AWAL = Total Pemasukan (semua bulan sebelumnya) - Total Pengeluaran (semua bulan sebelumnya)
 $saldo_awal = $total_pemasukan_sebelumnya - $total_pengeluaran_sebelumnya;
 
-// ===================================================================
-// 2. TOTAL & DETAIL PEMASUKAN BULAN INI
-// ===================================================================
-$sql_pemasukan = "SELECT COALESCE(SUM(nominal_pembayaran), 0) as total 
-                  FROM pembayaran 
-                  WHERE bulan_pembayaran = ? 
-                    AND tahun_pembayaran = ? 
-                    AND status_pembayaran = 'lunas'";
-$stmt = $koneksi->prepare($sql_pemasukan);
-$stmt->bind_param("ss", $namaBulan, $tahun);
-$stmt->execute();
-$pemasukan = $stmt->get_result()->fetch_assoc()['total'];
+$sql_pemasukan = "
+    SELECT COALESCE(SUM(nominal_pembayaran), 0) as total 
+    FROM pembayaran 
+    WHERE bulan_pembayaran = ? 
+      AND CAST(tahun_pembayaran AS UNSIGNED) = ? 
+      AND status_pembayaran = 'lunas'
+";
+$stmt4 = $koneksi->prepare($sql_pemasukan);
+if (!$stmt4) {
+    ob_end_clean();
+    echo json_encode(['success' => false, 'message' => 'Error prepare: ' . $koneksi->error]);
+    exit;
+}
+$stmt4->bind_param("si", $namaBulan, $tahunInt);
+$stmt4->execute();
+$pemasukan = $stmt4->get_result()->fetch_assoc()['total'];
+$stmt4->close();
 
 $sql_detail_pemasukan = "
     SELECT p.tanggal_pembayaran, pg.nama, p.jenis_pembayaran, p.nominal_pembayaran
     FROM pembayaran p
     JOIN warga w ON p.id_warga = w.id_warga
     JOIN pengguna pg ON w.id_pengguna = pg.id_pengguna
-    WHERE p.bulan_pembayaran = ? AND p.tahun_pembayaran = ? AND p.status_pembayaran = 'lunas'
-    ORDER BY p.tanggal_pembayaran ASC";
-$stmt_in = $koneksi->prepare($sql_detail_pemasukan);
-$stmt_in->bind_param("ss", $namaBulan, $tahun);
-$stmt_in->execute();
-$result_detail_pemasukan = $stmt_in->get_result();
+    WHERE p.bulan_pembayaran = ? 
+      AND CAST(p.tahun_pembayaran AS UNSIGNED) = ? 
+      AND p.status_pembayaran = 'lunas'
+    ORDER BY p.tanggal_pembayaran ASC
+";
+$stmt5 = $koneksi->prepare($sql_detail_pemasukan);
+if (!$stmt5) {
+    ob_end_clean();
+    echo json_encode(['success' => false, 'message' => 'Error prepare: ' . $koneksi->error]);
+    exit;
+}
+$stmt5->bind_param("si", $namaBulan, $tahunInt);
+$stmt5->execute();
+$result_detail_pemasukan = $stmt5->get_result();
 
-// ===================================================================
-// 3. TOTAL & DETAIL PENGELUARAN BULAN INI
-// ===================================================================
-$sql_pengeluaran = "SELECT COALESCE(SUM(nominal_pengeluaran), 0) as total 
-                    FROM pengeluaran 
-                    WHERE MONTH(tanggal_pengeluaran) = ? 
-                      AND YEAR(tanggal_pengeluaran) = ?
-                      AND status_persetujuan = 'Disetujui'";
-$stmt_out = $koneksi->prepare($sql_pengeluaran);
-$stmt_out->bind_param("ii", $bulanAngka, $tahun);
-$stmt_out->execute();
-$pengeluaran = $stmt_out->get_result()->fetch_assoc()['total'];
+$sql_pengeluaran = "
+    SELECT COALESCE(SUM(nominal_pengeluaran), 0) as total 
+    FROM pengeluaran 
+    WHERE MONTH(tanggal_pengeluaran) = ? 
+      AND YEAR(tanggal_pengeluaran) = ?
+      AND status_persetujuan = 'Disetujui'
+";
+$stmt6 = $koneksi->prepare($sql_pengeluaran);
+if (!$stmt6) {
+    ob_end_clean();
+    echo json_encode(['success' => false, 'message' => 'Error prepare: ' . $koneksi->error]);
+    exit;
+}
+$stmt6->bind_param("ii", $bulanAngka, $tahunInt);
+$stmt6->execute();
+$pengeluaran = $stmt6->get_result()->fetch_assoc()['total'];
+$stmt6->close();
 
 $sql_detail_pengeluaran = "
     SELECT tanggal_pengeluaran, nama_pengeluaran, jenis_pengeluaran, nominal_pengeluaran
     FROM pengeluaran
-    WHERE MONTH(tanggal_pengeluaran) = ? AND YEAR(tanggal_pengeluaran) = ? AND status_persetujuan = 'Disetujui'
-    ORDER BY tanggal_pengeluaran ASC";
-$stmt_out_detail = $koneksi->prepare($sql_detail_pengeluaran);
-$stmt_out_detail->bind_param("ii", $bulanAngka, $tahun);
-$stmt_out_detail->execute();
-$result_detail_pengeluaran = $stmt_out_detail->get_result();
+    WHERE MONTH(tanggal_pengeluaran) = ? 
+      AND YEAR(tanggal_pengeluaran) = ? 
+      AND status_persetujuan = 'Disetujui'
+    ORDER BY tanggal_pengeluaran ASC
+";
+$stmt7 = $koneksi->prepare($sql_detail_pengeluaran);
+if (!$stmt7) {
+    ob_end_clean();
+    echo json_encode(['success' => false, 'message' => 'Error prepare: ' . $koneksi->error]);
+    exit;
+}
+$stmt7->bind_param("ii", $bulanAngka, $tahunInt);
+$stmt7->execute();
+$result_detail_pengeluaran = $stmt7->get_result();
 
-// ===================================================================
-// 4. HITUNG SALDO AKHIR
-// ===================================================================
-// Rumus: Saldo Awal + Pemasukan - Pengeluaran
 $saldo_akhir = $saldo_awal + $pemasukan - $pengeluaran;
 
-// ===================================================================
-// 5. NAMA PENANDATANGAN
-// ===================================================================
+$warning_saldo_negatif = ($saldo_akhir < 0);
+
 $nama_ketua = 'Ketua RT';
 $nama_bendahara = 'Bendahara';
 $q = mysqli_query($koneksi, "SELECT nama, role FROM pengguna WHERE role IN ('ketua','bendahara') AND status='Aktif'");
-while ($r = mysqli_fetch_assoc($q)) {
-    if ($r['role'] === 'ketua')     $nama_ketua = $r['nama'];
-    if ($r['role'] === 'bendahara') $nama_bendahara = $r['nama'];
+if ($q) {
+    while ($r = mysqli_fetch_assoc($q)) {
+        if ($r['role'] === 'ketua')     $nama_ketua = $r['nama'];
+        if ($r['role'] === 'bendahara') $nama_bendahara = $r['nama'];
+    }
 }
 
-// ===================================================================
-// 6. PDF GENERATION
-// ===================================================================
 class PDF extends FPDF {
     private $periode;
     function __construct($periode) {
@@ -215,14 +303,22 @@ $pdf->Cell(0,10,'RINGKASAN KEUANGAN',0,1,'L');
 $pdf->SetTextColor(0);
 $pdf->Ln(3);
 
-// Tampilkan Saldo Awal
+if ($warning_saldo_negatif) {
+    $pdf->SetFont('Arial','B',10);
+    $pdf->SetTextColor(255,0,0);
+    $pdf->Cell(0,6,'PERINGATAN: Saldo akhir negatif! Pengeluaran melebihi dana yang tersedia.',0,1,'C');
+    $pdf->SetTextColor(0);
+    $pdf->Ln(3);
+}
+
 $pdf->SummaryBox('Saldo Awal','Rp '.number_format($saldo_awal,0,',','.'),[158,158,158]);
 $pdf->Ln(1);
 $pdf->SummaryBox('Total Pemasukan','Rp '.number_format($pemasukan,0,',','.'),[76,175,80]);
 $pdf->Ln(1);
 $pdf->SummaryBox('Total Pengeluaran','Rp '.number_format($pengeluaran,0,',','.'),[244,67,54]);
 $pdf->Ln(1);
-$pdf->SummaryBox('SALDO AKHIR','Rp '.number_format($saldo_akhir,0,',','.'),[33,150,243]);
+$warna_saldo = $saldo_akhir >= 0 ? [33,150,243] : [244,67,54];
+$pdf->SummaryBox('SALDO AKHIR','Rp '.number_format($saldo_akhir,0,',','.'),$warna_saldo);
 $pdf->Ln(10);
 
 $pdf->SetFont('Arial','B',14);
@@ -283,7 +379,9 @@ $pdf->Cell(95,6,$nama_bendahara,0,1,'C');
 
 $pdf->Output('F', $path);
 
-// Simpan ke database
+$stmt5->close();
+$stmt7->close();
+
 $stmt_save = $koneksi->prepare("
     INSERT INTO laporan 
     (bulan_tahun, tahun, bulan_nama, bulan_angka, nama_file, path_file, generated_at)
@@ -293,9 +391,11 @@ $stmt_save = $koneksi->prepare("
         path_file=VALUES(path_file),
         generated_at=NOW()
 ");
-$stmt_save->bind_param("ssssss", $bulan_tahun, $tahun, $namaBulan, $bulanAngka, $namaFile, $path);
-$stmt_save->execute();
-$stmt_save->close();
+if ($stmt_save) {
+    $stmt_save->bind_param("sissss", $bulan_tahun, $tahunInt, $namaBulan, $bulanAngkaStr, $namaFile, $path);
+    $stmt_save->execute();
+    $stmt_save->close();
+}
 
 ob_end_clean();
 echo json_encode([
@@ -303,6 +403,7 @@ echo json_encode([
     'message' => "Laporan $bulan_tahun berhasil digenerate!",
     'file' => $namaFile,
     'saldo_awal' => $saldo_awal,
-    'saldo_akhir' => $saldo_akhir
+    'saldo_akhir' => $saldo_akhir,
+    'warning' => $warning_saldo_negatif ? 'Saldo akhir negatif! Pengeluaran melebihi dana tersedia.' : null
 ]);
 ?>

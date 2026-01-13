@@ -14,7 +14,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $folder = "../assets/bukti_pembayaran/";
         
-        // Buat folder jika belum ada
         if (!is_dir($folder)) {
             mkdir($folder, 0755, true);
         }
@@ -36,7 +35,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    // ⚠️ SECURITY WARNING: Use prepared statements!
     $stmt = mysqli_prepare($koneksi, "
         UPDATE pembayaran SET
             bukti_pembayaran = ?,
